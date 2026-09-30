@@ -4,6 +4,7 @@
 // Learn more about theming and how to use it for your application's
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap');
 
 html {
   height: 100%;
@@ -42,20 +43,20 @@ body {
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
-  background-color: var(--cg-bg-padrao);
-  color: var(--cg-texto-principal);
+body, * {
+  font-family: 'Montserrat', sans-serif;
 }
 
 // Variáveis de cor
 :root {
-  --cg-verde-principal: #10b981;
+  --cg-verde-principal: #16A34A;
+  --cg-verde-logo: #1A8B44;
   --cg-azul-marinho: #0f172a;
   --cg-vermelho-cancelamento: #ef4444;
   --cg-branco-cards: #ffffff;
   --cg-bg-padrao: #f8fafc;
-  --cg-texto-principal: #334155;
+  --cg-texto-logo: #111827;
+  --cg-texto-principal: #000000;
   --cg-texto-secundario: #64748b;
   --cg-borda: #e2e8f0;
   --cg-sombra-suave: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
