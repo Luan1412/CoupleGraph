@@ -1,0 +1,27 @@
+.cg-app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--cg-bg-padrao);
+}
+
+.cg-sidebar-area {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--cg-borda);
+  background-color: var(--cg-branco-cards);
+}
+
+.cg-main-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cg-content-wrapper {
+  flex-grow: 1;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
