@@ -47,8 +47,17 @@ body, * {
   font-family: 'Montserrat', sans-serif;
 }
 
+input.ng-invalid.ng-touched {
+  border-color: var(--cg-vermelho-cancelamento) !important;
+}
+
+input.ng-valid.ng-touched {
+  border-color: var(--cg-verde-principal) !important;
+}
+
 // Variáveis de cor
 :root {
+  
   --cg-texto-escuro-logo:#111827;
   --cg-verde-principal: #16A34A;
   --cg-azul-marinho: #0f172a;
