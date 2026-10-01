@@ -19,16 +19,21 @@
     <div class="auth-card">
       <img src="/images/COUPLEGRAPH.svg" alt="Logo CoupleGraph" class="logo-card">
       
-      <form>
+      <form [formGroup]="loginForm" (ngSubmit)="fazerLogin()">
+
         <div class="input-group">
           <label>Email</label>
-          <input type="email" placeholder="Digite seu e-mail">
+          <input type="email" formControlName="email" placeholder="Digite seu e-mail">
+
+          @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+            <span style="color: var(--cg-vermelho-cancelamento); font-size: 12px; margin-top: 4px;">E-mail inválido.</span>
+          }
         </div>
-        
+ 
         <div class="input-group">
           <label>Senha</label>
           <div class="input-wrapper">
-            <input [type]="hidePassword() ? 'password' : 'text'" placeholder="**********">
+            <input [type]="hidePassword() ? 'password' : 'text'" formControlName="senha" placeholder="**********">
             
             <button type="button" class="btn-icon" (click)="togglePassword()">
               @if (hidePassword()) {
@@ -38,9 +43,13 @@
               }
             </button>
           </div>
+          
+          @if (loginForm.get('senha')?.invalid && loginForm.get('senha')?.touched) {
+            <span style="color: var(--cg-vermelho-cancelamento); font-size: 12px; margin-top: 4px;">A senha é obrigatória.</span>
+          }
         </div>
 
-        <button type="button" class="btn-solid">Entrar</button>
+        <button type="submit" class="btn-solid" [disabled]="loginForm.invalid" [style.opacity]="loginForm.invalid ? '0.7' : '1'">Entrar</button>  
       </form>
     </div>
 
