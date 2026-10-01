@@ -29,20 +29,20 @@
       letter-spacing: 4px;
       margin: 0;
       .azul-marinho { color: var(--cg-azul-marinho); }
-      .verde { color: var(--cg-verde-logo); }
+      .verde { color: var(--cg-verde-principal); }
     }
   }
 
   .area-slogan {
     h2 {
       font-size: 45px;
-      font-weight: 24;
+      font-weight: 600;
       color: var(--cg-texto-logo);
       line-height: 1.2;
       margin-bottom: 16px;
     }
     p {
-      font-size: 28px;
+      font-size: 20px;
       color: var(--cg-texto-logo);
       font-weight: 200;
     }
@@ -58,35 +58,49 @@
   align-items: center;
   padding: 40px;
   text-align: center;
-  color: white;
+  color: var(--cg-branco-cards);
 
   .texto-boasVindas {
     margin-bottom: 32px;
     width: 100%;
     
-    h2 {
-      font-size: 64px;
-      font-weight: 8;
+    h2 { 
+      font-size: 48px; 
+      font-weight: 800; 
       line-height: 1.1;
-      letter-spacing: -1px;
-      margin-bottom: 16px;
+      margin-bottom: 16px; 
+      color: var(--cg-branco-cards);
     }
-    p {
-      font-size: 25px;
-      font-weight: 476;
-      color:  var(--cg-texto-logo);
-    }
+
+      
+
+    p { 
+      font-size: 20px; 
+      font-weight: 600;
+      color:  var(--cg-texto-escuro-logo);
+      }
+      
+  
   }
 
   .mock-card {
+
     background-color: #FFFFFF;
     border-radius: 24px;
-    padding:60px 40px;
+    padding:50px 40px;
     width: 100%;
-    max-width: 380px;
+    max-width: 460px;
     color: var(--cg-texto-secundario);
     margin-bottom: 40px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+
+    .logo-card {
+      display: block;
+      margin: 0 auto 35px auto; 
+      width: 100%;
+      max-width: 230px; 
+      height: auto;
+    }
 
     h3 {
       font-size: 36px;
@@ -97,7 +111,7 @@
     .valor-total {
       font-size: 28px;
       font-weight: 800;
-      margin-bottom: 14px;
+      margin-bottom: 35px;
     }
 
     .lista-progresso {

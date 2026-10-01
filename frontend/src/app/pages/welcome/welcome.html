@@ -21,6 +21,7 @@
 
     <!-- Card do grafico  mockado-->
     <div class="mock-card">
+      <img src="/images/COUPLEGRAPH.svg" alt="Logo CoupleGraph" class="logo-card">
       <h3>Gastos do mês</h3>
       <p class="valor-total">R$ 2.400</p>
       
@@ -50,8 +51,8 @@
 
 
     <div class="botoes-acoes">
-      <button class="btn-outline">Cadastrar</button>
-      <button class="btn-solid">Entrar</button>
+      <button (click)="irParaCadastro()" class="btn-outline">Cadastrar</button>
+      <button (click)="irParaLogin()" class="btn-solid">Entrar</button>
     </div>
   </div>
 </div>
