@@ -38,7 +38,8 @@ export class Login {
           
           this.authService.guardarToken(resposta.access_token);
 
-          alert('Login efetuado com sucesso!');      
+          alert('Login efetuado com sucesso!');
+          this.router.navigate(['/dashboard']);     
       },
         error: (erro) => {
           console.error('Falha no login:', erro);

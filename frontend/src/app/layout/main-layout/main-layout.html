@@ -1,13 +1,20 @@
-<div class="cg-app-container">
-  <!-- Barra lateral -->
-  <app-sidebar class="cg-sidebar-area"></app-sidebar>
+<div class="layout-wrapper">
+  
+  <app-sidebar class="sidebar-container" [class.mobile-open]="isMobileMenuOpen"></app-sidebar>
 
-  <!-- Header  -->
-  <main class="cg-main-area">
-    <app-header></app-header>
-    
-    <div class="cg-content-wrapper">
+  <div class="main-area">
+
+    <app-header class="header-container" 
+              [menuAberto]="isMobileMenuOpen" 
+              (menuToggle)="toggleMenu()">
+  </app-header>
+  
+    <main class="content-container">
       <router-outlet></router-outlet>
-    </div>
-  </main>
+    </main> 
+  </div>
+  @if (isMobileMenuOpen) {
+    <div class="overlay" (click)="toggleMenu()"></div>
+  }
+  
 </div>
