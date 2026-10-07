@@ -1,5 +1,6 @@
 import { Component, signal, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
+import { Auth } from '../../core/services/auth';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 
 @Component({
@@ -11,6 +12,9 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 })
 export class Login {
   private fb = inject(FormBuilder);
+  private authService = inject(Auth);
+  private router = inject(Router);
+
   hidePassword = signal(true)
 
   loginForm = this.fb.group({
@@ -24,8 +28,25 @@ export class Login {
 
   fazerLogin() {
     if (this.loginForm.valid) {
-      console.log('Formulário válido! Dados:', this.loginForm.value);
-      
+
+      const email = this.loginForm.value.email ?? '';
+      const senha = this.loginForm.value.senha ?? '';
+
+      this.authService.login(email, senha).subscribe({
+        next: (resposta) => {
+          console.log('Sucesso! Token gerado:', resposta.access_token);
+          
+          this.authService.guardarToken(resposta.access_token);
+
+          alert('Login efetuado com sucesso!');
+          this.router.navigate(['/dashboard']);     
+      },
+        error: (erro) => {
+          console.error('Falha no login:', erro);
+          alert('E-mail ou senha incorretos. Tenta novamente!');
+        }      
+      });
+    
     } else {
       console.log('Preencha os dados corretamente!');
       this.loginForm.markAllAsTouched();

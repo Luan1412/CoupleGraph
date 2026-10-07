@@ -1,0 +1,34 @@
+<div class="spaces-widget-container">
+  <h3 class="widget-title">Seus espaços</h3>
+
+  <div class="spaces-list">
+    @for (espaco of espacos; track espaco.nome) {
+      <div class="space-card">
+        
+        <div class="space-header">
+          <h4 class="space-name">{{ espaco.nome }}</h4>
+        </div>
+        
+        <span class="space-type">{{ espaco.tipo }}</span>
+
+        <div class="space-details">
+          <span class="info-text"><strong>Saldo:</strong> R$ {{ espaco.saldo }}</span>
+          
+          @if (espaco.despesas) {
+            <span class="info-text"><strong>Despesas:</strong> R$ {{ espaco.despesas }}</span>
+          }
+        </div>
+
+        @if (espaco.mostrarAcessar) {
+          <div class="action-row">
+            <button class="btn-acessar">➔ Acessar</button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="create-action">
+    <button class="btn-criar">+ Criar espaço</button>
+  </div>
+</div>

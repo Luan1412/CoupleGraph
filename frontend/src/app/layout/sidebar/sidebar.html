@@ -1,14 +1,35 @@
-<aside class="cg-sidebar">
-  <div class="cg-logo">
-    <span class="logo-couple">COUPLE</span><span class="logo-graph">GRAPH</span>
+<aside class="sidebar">
+  <div class="logo-container">
+    <img src="/images/logo-branca.svg" alt="CoupleGraph Logo" class="logo">
   </div>
-  
-  <nav class="cg-nav">
-    <a routerLink="/" class="nav-item active">Início</a>
-    <a routerLink="/financas" class="nav-item">Finanças</a>
-    <a routerLink="/movimentacoes" class="nav-item">Movimentações</a>
-    <a routerLink="/relatorios" class="nav-item">Relatórios</a>
-    <a routerLink="/espacos" class="nav-item">Espaços</a>
-    <a routerLink="/configuracoes" class="nav-item">Configurações</a>
+
+  <nav class="nav-menu">
+    <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+      <img src="/icons/ic-inicio.svg" alt="Início" class="icon">
+      <span>Início</span>
+    </a>
+    <a routerLink="/financas" routerLinkActive="active" class="nav-item">
+      <img src="/icons/ic-financas.svg" alt="Finanças" class="icon">
+      <span>Finanças</span>
+    </a>
+    <a routerLink="/movimentacoes" routerLinkActive="active" class="nav-item">
+      <img src="/icons/ic-movimentacoes.svg" alt="Movimentações" class="icon">
+      <span>Movimentações</span>
+    </a>
+    <a routerLink="/relatorios" routerLinkActive="active" class="nav-item">
+      <img src="/icons/ic-relatorios.svg" alt="Relatórios" class="icon">
+      <span>Relatórios</span>
+    </a>
+    <a routerLink="/espacos" routerLinkActive="active" class="nav-item">
+      <img src="/icons/ic-espacos.svg" alt="Espaços" class="icon">
+      <span>Espaços</span>
+    </a>
   </nav>
+
+  <div class="footer-menu">
+    <a routerLink="/configuracoes" routerLinkActive="active" class="nav-item">
+      <img src="/icons/ic-configuracoes.svg" alt="Configurações" class="icon">
+      <span>Configurações</span>
+    </a>
+  </div>
 </aside>
