@@ -1,11 +1,15 @@
-<header class="cg-header">
-  <div class="header-info">
-    <h1 class="espaco-title">💚 Luan & Késia</h1>
-    <span class="espaco-subtitle">Espaço compartilhado · 2 participantes</span>
-  </div>
-  
-  <div class="header-actions">
-    <!-- Futuro menu -->
-    <div class="avatar">L</div>
+<header class="header">
+  <button class="menu-btn" (click)="abrirMenu()">
+    <img src="/icons/ic-menu.svg" alt="Menu">
+  </button>
+
+  @if (!menuAberto) {
+    <div class="mobile-logo">
+      <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="logo-img">
+    </div>
+  }
+
+  <div class="user-profile">
+    <span>Luan</span>
   </div>
 </header>

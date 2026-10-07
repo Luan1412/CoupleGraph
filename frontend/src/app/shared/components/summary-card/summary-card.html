@@ -1,0 +1,15 @@
+<div class="summary-card" [class.highlight-card]="highlight">
+  <div class="card-header">
+    <div class="icon-wrapper" [ngClass]="iconBgClass">
+       <img [src]="icon" [alt]="title">
+    </div>
+    <span class="card-title">{{ title }}</span>
+  </div>
+  
+  <div class="card-body">
+    <h3 class="card-value">{{ value }}</h3>
+    <span class="card-subtitle" [style.visibility]="subtitle ? 'visible' : 'hidden'">
+      {{ subtitle || 'espaço' }}
+    </span>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<div class="category-card">
+  <!-- Cabeçalho do Cartão -->
+  <h3 class="card-title">Gastos por categoria</h3>
+
+  <div class="total-section">
+    <span class="total-label">Total de gastos</span>
+    <h2 class="total-value">R$ {{ total }}</h2>
+  </div>
+
+  <div class="categories-list">
+    @for (cat of categorias; track cat.nome) {
+      <div class="category-row">
+        
+        <span class="cat-name">{{ cat.nome }}</span>
+        <div class="bar-track">
+          <div class="bar-fill" 
+               [style.width.%]="calcularPercentagem(cat.valor)" 
+               [style.background-color]="cat.cor">
+          </div>
+        </div>
+       
+        <span class="cat-value" [style.color]="cat.cor">R$ {{ cat.valor }}</span>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <span class="empty-text">Ainda não tem gastos registados.</span>
+      </div>
+    }
+  </div>
+</div>

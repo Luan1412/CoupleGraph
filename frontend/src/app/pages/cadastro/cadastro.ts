@@ -1,6 +1,7 @@
 import { Component, signal, inject} from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { Auth } from '../../core/services/auth';
 
 function senhasIguaisValidator(control: AbstractControl): ValidationErrors | null {
   const senha = control.get('senha')?.value;
@@ -17,6 +18,8 @@ function senhasIguaisValidator(control: AbstractControl): ValidationErrors | nul
 })
 export class Cadastro {
   private fb = inject(FormBuilder);
+  private authService = inject(Auth);
+  private router = inject(Router);
 
   cadastroForm = this.fb.group({
     nome: ['', Validators.required],
@@ -24,7 +27,7 @@ export class Cadastro {
     senha: ['', [
       Validators.required, 
       Validators.minLength(6),
-      Validators.pattern(/(?=.*[A-Z])(?=.*[0-9])/) // Pelo menos 1 maiúscula e 1 número
+      Validators.pattern(/(?=.*[A-Z])(?=.*[0-9])/) 
     ]],
     confirmarSenha: ['', Validators.required]
   }, { validators: senhasIguaisValidator });
@@ -41,8 +44,27 @@ export class Cadastro {
   }
   fazerCadastro() {
     if (this.cadastroForm.valid) {
-      console.log('Dados do novo utilizador prontos:', this.cadastroForm.value);
+      const dadosUsuario = {
+        nome: this.cadastroForm.value.nome ?? '',
+        email: this.cadastroForm.value.email ?? '',
+        senha: this.cadastroForm.value.senha ?? ''
+      };
+
+      this.authService.cadastrar(dadosUsuario).subscribe({
+        next: (resposta) => {
+          console.log('Sucesso! Usuário criado:', resposta);
+          alert('Conta criada com sucesso! Pode fazer o login agora.');
+          
+          this.router.navigate(['/login']); 
+        },
+        error: (erro) => {
+          console.error('Falha no cadastro:', erro);
+          alert('Erro ao criar conta. Verifica se o e-mail já está em uso.');
+        }
+      });
+      
     } else {
+      console.log('Preencha os dados corretamente!');
       this.cadastroForm.markAllAsTouched();
     }
   }
