@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.usuario import Usuario
 from app.schemas.usuario import UsuarioCreate, UsuarioResponse, Token
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token,SECRET_KEY, ALGORITHM
 
 router = APIRouter(prefix="/api/auth", tags=["Autenticação"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 @router.post("/cadastro", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
 def cadastrar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
@@ -40,3 +42,30 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     token_jwt = create_access_token(data={"sub": str(usuario.id)})
     
     return {"access_token": token_jwt, "token_type": "bearer"}
+
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """
+    Intercepta requisições, 
+    decodifica o JWT e devolve o usuário logado para rotas protegidas.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Não foi possível validar as credenciais",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    usuario = db.query(Usuario).filter(Usuario.id == int(user_id)).first()
+    if usuario is None:
+        raise credentials_exception
+        
+    return usuario

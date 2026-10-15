@@ -21,7 +21,7 @@ class Espaco(Base):
     __tablename__ = "espacos"
 
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
+    nome = Column(String(100), nullable=False)
     criado_por = Column(Integer, ForeignKey("usuarios.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -52,9 +52,9 @@ class Movimentacao(Base):
     espaco_id = Column(Integer, ForeignKey("espacos.id"))
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     tipo = Column(Enum(TipoMovimentacao), nullable=False)
-    descricao = Column(String, nullable=False)
+    descricao = Column(String(255), nullable=True)
     valor = Column(Float, nullable=False)
-    categoria = Column(String, nullable=False)
+    categoria = Column(String(100), nullable=False)
     data = Column(DateTime(timezone=True), default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -68,7 +68,7 @@ class Convite(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     espaco_id = Column(Integer, ForeignKey("espacos.id"))
-    email = Column(String, nullable=False)
+    email = Column(String(255), nullable=False)
     convidado_por = Column(Integer, ForeignKey("usuarios.id"))
     status = Column(Enum(StatusConvite), default=StatusConvite.PENDENTE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
