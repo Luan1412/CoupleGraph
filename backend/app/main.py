@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
-from app.models.usuario import Usuario
-from app.models.espaco import Espaco
-from app.api import auth, espaco
+
+from app.models import usuario, espaco  # noqa: F401
+
+from app.api import auth
+from app.api import espaco as espaco_router
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="CoupleGraph API",
@@ -11,17 +15,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-Base.metadata.create_all(bind=engine)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"], 
+    allow_origins=["http://localhost:4200"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(auth.router)
-app.include_router(espaco.router)
+app.include_router(espaco_router.router)
 
 @app.get("/")
 def root():
