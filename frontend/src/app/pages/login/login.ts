@@ -34,13 +34,10 @@ export class Login {
 
       this.authService.login(email, senha).subscribe({
         next: (resposta) => {
-          console.log('Sucesso! Token gerado:', resposta.access_token);
-          
           this.authService.guardarToken(resposta.access_token);
-
           alert('Login efetuado com sucesso!');
           this.router.navigate(['/dashboard']);     
-      },
+        },
         error: (erro) => {
           console.error('Falha no login:', erro);
           alert('E-mail ou senha incorretos. Tenta novamente!');
