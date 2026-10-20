@@ -1,0 +1,111 @@
+<div class="relatorios-container">
+  
+  <!-- Cabeçalho -->
+  <div class="header-section">
+    <h1 class="page-title">Relatórios</h1>
+    <p class="page-subtitle">Acompanhe sua vida financeira</p>
+  </div>
+
+  <!-- Card Filtro de Período -->
+  <section class="periodo-card">
+    <h3 class="periodo-title">Período</h3>
+    <div class="periodo-controls">
+      <div class="select-wrapper">
+        <select class="select-periodo" [ngModel]="periodoSelecionado()" (ngModelChange)="periodoSelecionado.set($event)">
+          @for (opcao of opcoesPeriodo; track opcao.value) {
+            <option [value]="opcao.value">{{ opcao.label }}</option>
+          }
+        </select>
+        <span class="select-arrow">▼</span>
+      </div>
+
+      <button class="btn-filtrar" (click)="filtrarPeriodo()">Filtrar</button>
+    </div>
+  </section>
+
+  <!-- Cards de Resumo -->
+  <div class="cards-grid">
+    <app-summary-card 
+      title="SALDO" 
+      [value]="saldo()" 
+      icon="/icons/ic-saldo.svg" 
+      [subtitle]="saldoSubtitulo()" 
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="RECEITAS" 
+      [value]="receitas()" 
+      icon="/icons/ic-receitas.svg" 
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="DESPESAS" 
+      [value]="despesas()" 
+      icon="/icons/ic-despesas.svg" 
+      [highlight]="true" 
+      iconBgClass="bg-red-light">
+    </app-summary-card>
+  </div>
+
+  <!-- Grid Central: Gastos por Categoria & Receitas x Despesas -->
+  <div class="middle-grid">
+    
+    <!-- Gastos por Categoria -->
+    <app-category-expenses
+      titulo="Gastos por categoria"
+      [total]="totalGastosCategoria()"
+      [itens]="categoriasGastos()">
+    </app-category-expenses>
+
+    <!-- Gráfico Receitas x Despesas -->
+    <section class="chart-card">
+      <h3 class="chart-title">Receitas x Despesas</h3>
+
+      <div class="chart-body">
+        <div class="bars-container">
+          @for (semana of dadosSemanas(); track semana.rotulo) {
+            <div class="week-group">
+              <div class="bars-pair">
+                @for (barra of semana.barras; track barra.cor + barra.valor) {
+                  <div class="bar-col-wrapper" [title]="barra.legenda">
+                    <div 
+                      class="bar-fill" 
+                      [style.height.%]="barra.valor" 
+                      [style.background-color]="barra.cor">
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Rótulos das Semanas -->
+        <div class="week-labels-pill">
+          @for (semana of dadosSemanas(); track semana.rotulo) {
+            <span class="week-label-item">{{ semana.rotulo }}</span>
+          }
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Card Inferior: Resumo do Período -->
+  <section class="resumo-periodo-card">
+    <h3 class="resumo-title">Resumo do período</h3>
+    <div class="resumo-content">
+      <p class="resumo-item">
+        <strong>Total de movimentações:</strong> {{ totalMovimentacoes() }}
+      </p>
+      <p class="resumo-item">
+        <strong>Média de gastos por movimentação:</strong> {{ mediaGastos() }}
+      </p>
+    </div>
+  </section>
+
+</div>

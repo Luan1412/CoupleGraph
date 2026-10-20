@@ -1,0 +1,249 @@
+.relatorios-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 0.5rem 0.5rem 3.5rem;
+}
+
+.header-section {
+  .page-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--cg-texto-escuro-logo);
+    margin: 0 0 0.35rem 0;
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--cg-texto-escuro-logo);
+    margin: 0;
+  }
+}
+
+/* ===============================
+   CARD DE PERÍODO (SUPERIOR)
+   =============================== */
+.periodo-card {
+  background-color: var(--cg-branco-cards);
+  border: 1.5px solid var(--cg-verde-principal);
+  border-radius: 12px;
+  padding: 1.75rem 2.2rem;
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+  .periodo-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--cg-texto-escuro-logo);
+    margin: 0 0 1.25rem 0;
+  }
+
+  .periodo-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .select-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  .select-periodo {
+    width: 100%;
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--cg-texto-escuro-logo);
+    appearance: none;
+    cursor: pointer;
+    padding-right: 1.5rem;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .select-arrow {
+    position: absolute;
+    right: 0.2rem;
+    pointer-events: none;
+    font-size: 0.75rem;
+    color: var(--cg-texto-escuro-logo);
+  }
+
+  .btn-filtrar {
+    background-color: var(--cg-botao-azul);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.55rem 2.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #0f3256;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+/* ===============================
+   CARDS DE RESUMO (3 CARDS)
+   =============================== */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ===============================
+   GRID CENTRAL (LADO A LADO)
+   =============================== */
+.middle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===============================
+   GRÁFICO RECEITAS X DESPESAS
+   =============================== */
+.chart-card {
+  background-color: var(--cg-branco-cards);
+  border: 1.5px solid var(--cg-verde-principal);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .chart-title {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--cg-texto-escuro-logo);
+    margin: 0 0 1.5rem 0;
+  }
+
+  .chart-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 1;
+    min-height: 250px;
+  }
+
+  .bars-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 190px;
+    padding: 0 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .week-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .bars-pair {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.85rem;
+    height: 100%;
+  }
+
+  .bar-col-wrapper {
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .bar-fill {
+    width: 20px;
+    border-radius: 6px 6px 0 0;
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  .week-labels-pill {
+    background-color: #cbd5e1;
+    border-radius: 6px;
+    padding: 0.45rem 1rem;
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+  }
+
+  .week-label-item {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--cg-texto-escuro-logo);
+    text-align: center;
+  }
+}
+
+/* ===============================
+   CARD INFERIOR (RESUMO DO PERÍODO)
+   =============================== */
+.resumo-periodo-card {
+  background-color: var(--cg-branco-cards);
+  border: 1.5px solid var(--cg-verde-principal);
+  border-radius: 12px;
+  padding: 1.75rem 2.2rem;
+  max-width: 460px;
+  width: 100%;
+  margin: 1rem auto 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+  .resumo-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--cg-texto-escuro-logo);
+    margin: 0 0 1.5rem 0;
+  }
+
+  .resumo-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .resumo-item {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cg-texto-escuro-logo);
+    margin: 0;
+
+    strong {
+      font-weight: 800;
+    }
+  }
+}
