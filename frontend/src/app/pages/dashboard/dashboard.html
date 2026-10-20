@@ -31,12 +31,15 @@
   <div class="bottom-grid">
     
     <app-category-expenses
-      [total]="totalGastos"
-      [categorias]="gastosCategorias">
+      titulo="Gastos por espaço"
+      [total]="totalGastosEspacos()"
+      [itens]="gastosPorEspaco()"
+      mensagemVazio="Sem gasto em espaços">
     </app-category-expenses>
 
     <app-spaces-widget
-      [espacos]="meusEspacos">
+      [espacos]="meusEspacos()"
+      [carregando]="carregandoEspacos()">
     </app-spaces-widget>
 
   </div>

@@ -26,7 +26,33 @@
 .spaces-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 9999px;
+  }
+
+  .loading-state, .empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cg-texto-escuro-logo);
+
+    p {
+      margin: 0;
+    }
+  }
 }
 
 .space-card {

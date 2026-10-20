@@ -64,10 +64,13 @@
 }
 
 .cat-name {
-  width: 100px; 
+  width: 130px; 
   font-weight: 800;
   font-size: 0.95rem;
   color: var(--cg-texto-escuro-logo);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bar-track {
@@ -83,7 +86,7 @@
 }
 
 .cat-value {
-  width: 60px; 
+  width: 70px; 
   text-align: right;
   font-weight: 800;
   font-size: 0.85rem;
@@ -92,8 +95,8 @@
 
 .empty-state {
   text-align: center;
-  padding: 2rem 0;
-  color: var(--cg-texto-secundario);
-  font-weight: 500;
-  font-style: italic;
+  padding: 3rem 1rem;
+  color: var(--cg-texto-escuro-logo);
+  font-weight: 700;
+  font-size: 1.05rem;
 }

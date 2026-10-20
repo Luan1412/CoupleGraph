@@ -7,6 +7,9 @@ export interface EspacoModel {
   nome: string;
   criado_por: number;
   created_at: string;
+  total_membros?: number;
+  saldo?: number;
+  despesas?: number;
 }
 
 export interface EspacoUsuarioModel {

@@ -31,6 +31,24 @@ class Espaco(Base):
     movimentacoes = relationship("Movimentacao", back_populates="espaco")
     convites = relationship("Convite", back_populates="espaco")
 
+    @property
+    def total_membros(self) -> int:
+        return len(self.membros) if self.membros else 1
+
+    @property
+    def saldo(self) -> float:
+        if not self.movimentacoes:
+            return 0.0
+        rec = sum(float(m.valor) for m in self.movimentacoes if m.tipo == TipoMovimentacao.RECEITA)
+        desp = sum(float(m.valor) for m in self.movimentacoes if m.tipo == TipoMovimentacao.DESPESA)
+        return rec - desp
+
+    @property
+    def despesas(self) -> float:
+        if not self.movimentacoes:
+            return 0.0
+        return sum(float(m.valor) for m in self.movimentacoes if m.tipo == TipoMovimentacao.DESPESA)
+
 
 class EspacoUsuario(Base):
     __tablename__ = "espaco_usuarios"
