@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, DateTime, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -34,6 +34,7 @@ class Espaco(Base):
 
 class EspacoUsuario(Base):
     __tablename__ = "espaco_usuarios"
+    __table_args__ = (UniqueConstraint("espaco_id", "usuario_id", name="uq_espaco_usuario"),)
 
     id = Column(Integer, primary_key=True, index=True)
     espaco_id = Column(Integer, ForeignKey("espacos.id"))
@@ -53,7 +54,7 @@ class Movimentacao(Base):
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     tipo = Column(Enum(TipoMovimentacao), nullable=False)
     descricao = Column(String(255), nullable=True)
-    valor = Column(Float, nullable=False)
+    valor = Column(Numeric(12, 2), nullable=False)
     categoria = Column(String(100), nullable=False)
     data = Column(DateTime(timezone=True), default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
