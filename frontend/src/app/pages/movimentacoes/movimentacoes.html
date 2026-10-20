@@ -1,0 +1,758 @@
+<div class="movimentacoes-container">
+  
+  <!-- Cabeçalho -->
+  <header class="header-section">
+    <div class="header-titles">
+      <h1 class="page-title">Movimentações</h1>
+      <p class="page-subtitle">Acompanhe, filtre e registre todas as entradas e saídas financeiras</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-action-outline" (click)="irParaFinancas()">
+        <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>Ver orçamentos</span>
+      </button>
+
+      <button class="btn-action-primary" (click)="abrirModal('despesa')">
+        <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Nova movimentação</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Cards de Resumo no Topo -->
+  <section class="cards-grid">
+    <app-summary-card 
+      title="SALDO NO PERÍODO" 
+      [value]="formatarMoeda(resumo().saldo)" 
+      icon="/icons/ic-saldo.svg" 
+      subtitle="Entradas menos saídas" 
+      [highlight]="true" 
+      [iconBgClass]="resumo().saldo >= 0 ? 'bg-green-light' : 'bg-red-light'">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="RECEITAS" 
+      [value]="formatarMoeda(resumo().total_receitas)" 
+      icon="/icons/ic-receitas.svg" 
+      subtitle="Total de entradas"
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="DESPESAS" 
+      [value]="formatarMoeda(resumo().total_despesas)" 
+      icon="/icons/ic-despesas.svg" 
+      subtitle="Total de saídas"
+      [highlight]="true" 
+      iconBgClass="bg-red-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="TOTAL DE REGISTROS" 
+      [value]="resumo().total_movimentacoes.toString()" 
+      icon="/icons/ic-movimentacoes.svg" 
+      subtitle="Movimentações listadas"
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+  </section>
+
+  <!-- Barra de Filtros Avançados -->
+  <section class="card-filtro-box">
+    <div class="filtros-container">
+      
+      <!-- Seletor Tipo (Pills) -->
+      <div class="tipo-toggle-group">
+        <button 
+          type="button"
+          class="tipo-pill" 
+          [class.active]="tipoFiltro() === 'todos'"
+          (click)="aplicarFiltroTipo('todos')">
+          Todas
+        </button>
+        <button 
+          type="button"
+          class="tipo-pill tipo-receita" 
+          [class.active]="tipoFiltro() === 'receita'"
+          (click)="aplicarFiltroTipo('receita')">
+          Receitas
+        </button>
+        <button 
+          type="button"
+          class="tipo-pill tipo-despesa" 
+          [class.active]="tipoFiltro() === 'despesa'"
+          (click)="aplicarFiltroTipo('despesa')">
+          Despesas
+        </button>
+      </div>
+
+      <!-- Grid de Dropdowns e Busca -->
+      <div class="filtros-inputs-row">
+        
+        <!-- Filtro por Espaço -->
+        <div class="filtro-item">
+          <label class="filtro-label" for="filtroEspaco">Espaço</label>
+          <div class="select-pill-wrapper">
+            <select 
+              id="filtroEspaco" 
+              class="select-pill" 
+              [ngModel]="espacoFiltro()" 
+              (ngModelChange)="espacoFiltro.set($event); onFiltroChange()">
+              <option value="todos">Todos os espaços</option>
+              @for (item of listaEspacos(); track item.espaco.id) {
+                <option [value]="item.espaco.id">{{ item.espaco.nome }}</option>
+              }
+            </select>
+            <span class="select-arrow">▼</span>
+          </div>
+        </div>
+
+        <!-- Filtro por Categoria -->
+        <div class="filtro-item">
+          <label class="filtro-label" for="filtroCategoria">Categoria</label>
+          <div class="select-pill-wrapper">
+            <select 
+              id="filtroCategoria" 
+              class="select-pill" 
+              [ngModel]="categoriaFiltro()" 
+              (ngModelChange)="categoriaFiltro.set($event); onFiltroChange()">
+              <option value="todas">Todas as categorias</option>
+              @for (cat of categorias(); track cat.id ?? cat.nome) {
+                <option [value]="cat.nome">{{ cat.nome }}</option>
+              }
+            </select>
+            <span class="select-arrow">▼</span>
+          </div>
+        </div>
+
+        <!-- Filtro por Período -->
+        <div class="filtro-item">
+          <label class="filtro-label" for="filtroPeriodo">Período</label>
+          <div class="select-pill-wrapper">
+            <select 
+              id="filtroPeriodo" 
+              class="select-pill" 
+              [ngModel]="periodoFiltro()" 
+              (ngModelChange)="periodoFiltro.set($event); onFiltroChange()">
+              @for (p of opcoesPeriodo; track p.value) {
+                <option [value]="p.value">{{ p.label }}</option>
+              }
+            </select>
+            <span class="select-arrow">▼</span>
+          </div>
+        </div>
+
+        <!-- Busca Textual -->
+        <div class="filtro-item busca-item">
+          <label class="filtro-label" for="buscaTexto">Buscar descrição</label>
+          <div class="search-input-wrapper">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              id="buscaTexto"
+              type="text" 
+              class="input-search-pill" 
+              placeholder="Ex: Supermercado, Salário..."
+              [ngModel]="buscaTexto()" 
+              (ngModelChange)="buscaTexto.set($event); onFiltroChange()"
+            />
+          </div>
+        </div>
+
+        <!-- Botão Limpar -->
+        <div class="filtro-item btn-limpar-item">
+          <label class="filtro-label">&nbsp;</label>
+          <button type="button" class="btn-limpar-filtros" (click)="limparFiltros()" title="Limpar todos os filtros">
+            Limpar
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Lista de Movimentações -->
+  <section class="card-box tabela-card">
+    
+    <div class="tabela-header-bar">
+      <div class="tabela-title-wrap">
+        <h2 class="tabela-title">Histórico de Movimentações</h2>
+        <span class="tabela-badge">{{ movimentacoes().length }} registros</span>
+      </div>
+
+      <div class="tabela-quick-actions">
+        <button class="btn-quick-add btn-quick-income" (click)="abrirModal('receita')">
+          + Receita
+        </button>
+        <button class="btn-quick-add btn-quick-expense" (click)="abrirModal('despesa')">
+          - Despesa
+        </button>
+      </div>
+    </div>
+
+    @if (carregando()) {
+      <div class="estado-feedback loading-feedback">
+        <div class="loading-spinner"></div>
+        <p>Carregando movimentações financeiras...</p>
+      </div>
+    } @else if (movimentacoes().length === 0) {
+      <div class="estado-feedback empty-feedback">
+        <div class="empty-icon-wrap">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+          </svg>
+        </div>
+        <h3 class="empty-title">Nenhuma movimentação encontrada</h3>
+        <p class="empty-subtitle">Não há registros para os filtros selecionados ou ainda não foi feito nenhum lançamento.</p>
+        <button class="btn-action-primary" (click)="abrirModal('despesa')">
+          + Fazer primeiro lançamento
+        </button>
+      </div>
+    } @else {
+      <!-- Tabela Responsiva -->
+      <div class="table-responsive">
+        <table class="tabela-movimentacoes">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Espaço</th>
+              <th>Data</th>
+              <th class="text-right">Valor</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (mov of movimentacoes(); track mov.id) {
+              <tr class="mov-row" [class.row-receita]="mov.tipo === 'receita'" [class.row-despesa]="mov.tipo === 'despesa'">
+                
+                <!-- Coluna Tipo com Ícone Vetorial SVG -->
+                <td class="col-tipo">
+                  @if (mov.tipo === 'receita') {
+                    <span class="badge-tipo badge-receita" title="Receita">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                      </svg>
+                      Receita
+                    </span>
+                  } @else {
+                    <span class="badge-tipo badge-despesa" title="Despesa">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <polyline points="19 12 12 19 5 12"></polyline>
+                      </svg>
+                      Despesa
+                    </span>
+                  }
+                </td>
+
+                <!-- Descrição -->
+                <td class="col-desc">
+                  <span class="desc-text">{{ mov.descricao }}</span>
+                  @if (mov.usuario_nome) {
+                    <span class="author-subtext">por {{ mov.usuario_nome }}</span>
+                  }
+                </td>
+
+                <!-- Categoria com Tag Colorida -->
+                <td class="col-categoria">
+                  <span class="cat-pill-tag">
+                    <span class="cat-dot" [style.background-color]="obterCorCategoria(mov.categoria)"></span>
+                    <span class="cat-tag-name">{{ mov.categoria }}</span>
+                  </span>
+                </td>
+
+                <!-- Espaço -->
+                <td class="col-espaco">
+                  <span class="espaco-tag">{{ mov.espaco_nome || 'Geral' }}</span>
+                </td>
+
+                <!-- Data -->
+                <td class="col-data">
+                  <span class="data-text">{{ formatarData(mov.data) }}</span>
+                </td>
+
+                <!-- Valor -->
+                <td class="col-valor text-right" [class.val-receita]="mov.tipo === 'receita'" [class.val-despesa]="mov.tipo === 'despesa'">
+                  <strong>{{ mov.tipo === 'receita' ? '+' : '-' }} {{ formatarMoeda(mov.valor) }}</strong>
+                </td>
+
+                <!-- Ações -->
+                <td class="col-acoes text-center">
+                  <div class="actions-group-inline">
+                    <button 
+                      type="button"
+                      class="btn-action-icon btn-edit-row" 
+                      (click)="abrirModalEdicao(mov)" 
+                      title="Editar movimentação">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
+                    <button 
+                      type="button"
+                      class="btn-action-icon btn-delete-row" 
+                      (click)="iniciarExclusao(mov)" 
+                      title="Excluir movimentação">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </section>
+
+  <!-- Modal Nova Movimentação -->
+  @if (modalAberto()) {
+    <div class="modal-backdrop" (click)="fecharModal()">
+      <div class="modal-dialog modal-couplegraph" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+          <button type="button" class="btn-close-icon" (click)="fecharModal()" aria-label="Fechar">✕</button>
+        </div>
+
+        <h2 class="modal-main-title text-center">Nova Movimentação</h2>
+        <p class="modal-subtitle text-center">Adicione um novo lançamento financeiro ao seu espaço.</p>
+
+        <!-- Toggle Tipo: Receita ou Despesa -->
+        <div class="modal-tipo-toggle">
+          <button 
+            type="button" 
+            class="tipo-btn btn-toggle-despesa" 
+            [class.active]="formTipo() === 'despesa'"
+            (click)="formTipo.set('despesa')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
+            Despesa
+          </button>
+          
+          <button 
+            type="button" 
+            class="tipo-btn btn-toggle-receita" 
+            [class.active]="formTipo() === 'receita'"
+            (click)="formTipo.set('receita')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+            Receita
+          </button>
+        </div>
+
+        <form class="modal-form" (ngSubmit)="salvarMovimentacao()">
+          
+          <!-- Campo Valor -->
+          <div class="form-group">
+            <label class="form-label" for="valorInput">Valor *</label>
+            <div class="valor-input-wrapper">
+              <span class="currency-sign">R$</span>
+              <input 
+                id="valorInput"
+                type="number" 
+                step="0.01" 
+                min="0.01" 
+                class="input-valor" 
+                placeholder="0,00"
+                [(ngModel)]="formValor" 
+                name="valor"
+                autofocus
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Campo Descrição -->
+          <div class="form-group">
+            <label class="form-label" for="descricaoInput">Descrição *</label>
+            <input 
+              id="descricaoInput"
+              type="text" 
+              class="input-pill" 
+              placeholder="Ex: Supermercado mensal, Salário, Internet..."
+              [(ngModel)]="formDescricao" 
+              name="descricao"
+              required
+            />
+          </div>
+
+          <!-- Linha Dupla: Categoria & Espaço -->
+          <div class="form-row-dupla">
+            
+            <div class="form-group">
+              <label class="form-label" for="categoriaInput">Categoria *</label>
+              <div class="combobox-wrapper">
+                <div class="combobox-input-wrap">
+                  <input 
+                    id="categoriaInput" 
+                    type="text"
+                    class="select-pill combobox-input" 
+                    [ngModel]="formCategoria" 
+                    (input)="onInputCategoria($event)"
+                    (focus)="abrirDropdownCategoria()"
+                    (blur)="fecharDropdownCategoria()"
+                    name="categoria"
+                    placeholder="Selecione ou digite..."
+                    autocomplete="off"
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    class="combobox-arrow-btn" 
+                    (mousedown)="toggleDropdownCategoria($event)"
+                    tabindex="-1"
+                    aria-label="Abrir opções de categoria">
+                    ▼
+                  </button>
+                </div>
+
+                @if (dropdownCategoriaAberto()) {
+                  <ul class="combobox-menu">
+                    @for (cat of categoriasFiltradas(); track cat.id ?? cat.nome) {
+                      <li class="combobox-item" (mousedown)="selecionarCategoria(cat.nome)">
+                        <span class="cat-dot" [style.background-color]="cat.cor"></span>
+                        <span class="cat-nome-opcao">{{ cat.nome }}</span>
+                      </li>
+                    }
+
+                    @if (formCategoria.trim() && !categoriaJaExiste(formCategoria)) {
+                      <li class="combobox-item combobox-item-novo" (mousedown)="selecionarCategoria(formCategoria.trim())">
+                        <span class="plus-icon">+</span>
+                        <span>Adicionar nova: "<strong>{{ formCategoria.trim() }}</strong>"</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="espacoInput">Espaço *</label>
+              <div class="select-pill-wrapper">
+                <select 
+                  id="espacoInput" 
+                  class="select-pill" 
+                  [(ngModel)]="formEspacoId" 
+                  name="espacoId"
+                  required>
+                  @for (item of listaEspacos(); track item.espaco.id) {
+                    <option [value]="item.espaco.id">{{ item.espaco.nome }}</option>
+                  }
+                </select>
+                <span class="select-arrow">▼</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Campo Data -->
+          <div class="form-group">
+            <label class="form-label" for="dataInput">Data do Lançamento</label>
+            <input 
+              id="dataInput"
+              type="date" 
+              class="input-pill" 
+              [(ngModel)]="formData" 
+              name="data"
+            />
+          </div>
+
+          @if (erroModal()) {
+            <div class="modal-error-box">
+              {{ erroModal() }}
+            </div>
+          }
+
+          <!-- Ações do Modal -->
+          <div class="modal-stack-actions">
+            <button type="submit" class="btn-pill-primary" [disabled]="salvando()">
+              {{ salvando() ? 'Salvando...' : 'Salvar movimentação' }}
+            </button>
+            <button type="button" class="btn-pill-outline" (click)="fecharModal()" [disabled]="salvando()">
+              Cancelar
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal Editar Movimentação -->
+  @if (modalEdicaoAberto() && movimentacaoEmEdicao(); as movEdit) {
+    <div class="modal-backdrop" (click)="fecharModalEdicao()">
+      <div class="modal-dialog modal-couplegraph" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+          <button type="button" class="btn-close-icon" (click)="fecharModalEdicao()" aria-label="Fechar">✕</button>
+        </div>
+
+        <h2 class="modal-main-title text-center">Editar Movimentação</h2>
+        <p class="modal-subtitle text-center">Atualize os dados ou exclua este lançamento financeiro.</p>
+
+        <!-- Toggle Tipo: Receita ou Despesa -->
+        <div class="modal-tipo-toggle">
+          <button 
+            type="button" 
+            class="tipo-btn btn-toggle-despesa" 
+            [class.active]="formEdicaoTipo() === 'despesa'"
+            (click)="formEdicaoTipo.set('despesa')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
+            Despesa
+          </button>
+          
+          <button 
+            type="button" 
+            class="tipo-btn btn-toggle-receita" 
+            [class.active]="formEdicaoTipo() === 'receita'"
+            (click)="formEdicaoTipo.set('receita')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+            Receita
+          </button>
+        </div>
+
+        <form class="modal-form" (ngSubmit)="salvarEdicao()">
+          
+          <!-- Campo Valor -->
+          <div class="form-group">
+            <label class="form-label" for="valorEdicaoInput">Valor *</label>
+            <div class="valor-input-wrapper">
+              <span class="currency-sign">R$</span>
+              <input 
+                id="valorEdicaoInput"
+                type="number" 
+                step="0.01" 
+                min="0.01" 
+                class="input-valor" 
+                placeholder="0,00"
+                [(ngModel)]="formEdicaoValor" 
+                name="edicaoValor"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Campo Descrição -->
+          <div class="form-group">
+            <label class="form-label" for="descricaoEdicaoInput">Descrição *</label>
+            <input 
+              id="descricaoEdicaoInput"
+              type="text" 
+              class="input-pill" 
+              placeholder="Ex: Supermercado mensal, Salário, Internet..."
+              [(ngModel)]="formEdicaoDescricao" 
+              name="edicaoDescricao"
+              required
+            />
+          </div>
+
+          <!-- Linha Dupla: Categoria & Espaço -->
+          <div class="form-row-dupla">
+            
+            <div class="form-group">
+              <label class="form-label" for="categoriaEdicaoInput">Categoria *</label>
+              <div class="combobox-wrapper">
+                <div class="combobox-input-wrap">
+                  <input 
+                    id="categoriaEdicaoInput" 
+                    type="text"
+                    class="select-pill combobox-input" 
+                    [ngModel]="formEdicaoCategoria" 
+                    (input)="onInputEdicaoCategoria($event)"
+                    (focus)="abrirDropdownEdicaoCategoria()"
+                    (blur)="fecharDropdownEdicaoCategoria()"
+                    name="edicaoCategoria"
+                    placeholder="Selecione ou digite..."
+                    autocomplete="off"
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    class="combobox-arrow-btn" 
+                    (mousedown)="toggleDropdownEdicaoCategoria($event)"
+                    tabindex="-1"
+                    aria-label="Abrir opções de categoria">
+                    ▼
+                  </button>
+                </div>
+
+                @if (dropdownEdicaoCategoriaAberto()) {
+                  <ul class="combobox-menu">
+                    @for (cat of categoriasEdicaoFiltradas(); track cat.id ?? cat.nome) {
+                      <li class="combobox-item" (mousedown)="selecionarEdicaoCategoria(cat.nome)">
+                        <span class="cat-dot" [style.background-color]="cat.cor"></span>
+                        <span class="cat-nome-opcao">{{ cat.nome }}</span>
+                      </li>
+                    }
+
+                    @if (formEdicaoCategoria.trim() && !categoriaJaExiste(formEdicaoCategoria)) {
+                      <li class="combobox-item combobox-item-novo" (mousedown)="selecionarEdicaoCategoria(formEdicaoCategoria.trim())">
+                        <span class="plus-icon">+</span>
+                        <span>Adicionar nova: "<strong>{{ formEdicaoCategoria.trim() }}</strong>"</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="espacoEdicaoInput">Espaço *</label>
+              <div class="select-pill-wrapper">
+                <select 
+                  id="espacoEdicaoInput" 
+                  class="select-pill" 
+                  [(ngModel)]="formEdicaoEspacoId" 
+                  name="edicaoEspacoId"
+                  required>
+                  @for (item of listaEspacos(); track item.espaco.id) {
+                    <option [value]="item.espaco.id">{{ item.espaco.nome }}</option>
+                  }
+                </select>
+                <span class="select-arrow">▼</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Campo Data -->
+          <div class="form-group">
+            <label class="form-label" for="dataEdicaoInput">Data do Lançamento</label>
+            <input 
+              id="dataEdicaoInput"
+              type="date" 
+              class="input-pill" 
+              [(ngModel)]="formEdicaoData" 
+              name="edicaoData"
+            />
+          </div>
+
+          @if (erroModalEdicao()) {
+            <div class="modal-error-box">
+              {{ erroModalEdicao() }}
+            </div>
+          }
+
+          <!-- Ações do Modal de Edição -->
+          <div class="modal-stack-actions">
+            <button type="submit" class="btn-pill-primary" [disabled]="salvandoEdicao()">
+              {{ salvandoEdicao() ? 'Salvando...' : 'Salvar alterações' }}
+            </button>
+            
+            <button 
+              type="button" 
+              class="btn-pill-danger" 
+              (click)="iniciarExclusao(movEdit)"
+              [disabled]="salvandoEdicao()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Excluir movimentação
+            </button>
+
+            <button type="button" class="btn-pill-outline" (click)="fecharModalEdicao()" [disabled]="salvandoEdicao()">
+              Cancelar
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal Confirmação de Exclusão -->
+  @if (modalConfirmarExclusaoAberto() && movimentacaoParaExcluir(); as movDel) {
+    <div class="modal-backdrop" (click)="fecharModalExclusao()">
+      <div class="modal-dialog modal-couplegraph modal-confirm-dialog" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+          <button type="button" class="btn-close-icon" (click)="fecharModalExclusao()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="confirm-icon-box">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+
+        <h2 class="modal-main-title text-center">Excluir movimentação?</h2>
+        <p class="modal-subtitle text-center">
+          Você tem certeza que deseja excluir "<strong>{{ movDel.descricao }}</strong>" de 
+          <strong>{{ formatarMoeda(movDel.valor) }}</strong>? Esta ação não pode ser desfeita.
+        </p>
+
+        <div class="modal-stack-actions">
+          <button 
+            type="button" 
+            class="btn-pill-danger-solid" 
+            (click)="confirmarExclusao()" 
+            [disabled]="excluindo()">
+            {{ excluindo() ? 'Excluindo...' : 'Sim, excluir movimentação' }}
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn-pill-outline" 
+            (click)="fecharModalExclusao()" 
+            [disabled]="excluindo()">
+            Cancelar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Toast de Sucesso -->
+  @if (mensagemSucesso()) {
+    <div class="toast-sucesso">
+      <div class="toast-icone">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <span class="toast-texto">{{ mensagemSucesso() }}</span>
+    </div>
+  }
+
+</div>

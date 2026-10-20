@@ -6,6 +6,7 @@ from app.models import usuario, espaco  # noqa: F401
 
 from app.api import auth
 from app.api import espaco as espaco_router
+from app.api import movimentacao as movimentacao_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,6 +26,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(espaco_router.router)
+app.include_router(movimentacao_router.router)
 
 @app.get("/")
 def root():
