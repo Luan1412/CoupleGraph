@@ -26,7 +26,7 @@ export class Cadastro {
     email: ['', [Validators.required, Validators.email]],
     senha: ['', [
       Validators.required, 
-      Validators.minLength(6),
+      Validators.minLength(8),
       Validators.pattern(/(?=.*[A-Z])(?=.*[0-9])/) 
     ]],
     confirmarSenha: ['', Validators.required]

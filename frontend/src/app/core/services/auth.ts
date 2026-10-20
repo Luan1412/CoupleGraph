@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -7,6 +8,8 @@ import { Observable } from 'rxjs';
 })
 export class Auth {
   private apiUrl = 'http://localhost:8000/api/auth';
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser = isPlatformBrowser(this.platformId);
 
   constructor(private http: HttpClient) { }
 
@@ -27,14 +30,25 @@ export class Auth {
   }
 
   guardarToken(token: string): void {
-    localStorage.setItem('access_token', token);
+    if (this.isBrowser) {
+      localStorage.setItem('access_token', token);
+    }
   }
 
   obterToken(): string | null {
-    return localStorage.getItem('access_token');
+    if (this.isBrowser) {
+      return localStorage.getItem('access_token');
+    }
+    return null;
+  }
+
+  estaAutenticado(): boolean {
+    return !!this.obterToken();
   }
 
   logout(): void {
-    localStorage.removeItem('access_token');
+    if (this.isBrowser) {
+      localStorage.removeItem('access_token');
+    }
   }
 }
