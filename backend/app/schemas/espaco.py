@@ -7,6 +7,9 @@ class EspacoBase(BaseModel):
 class EspacoCreate(EspacoBase):
     pass 
 
+class EspacoUpdate(EspacoBase):
+    pass 
+
 class EspacoResponse(EspacoBase):
     id: int
     criado_por: int

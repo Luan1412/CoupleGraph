@@ -1,0 +1,346 @@
+<div class="espacos-wrapper">
+  
+  <div class="header-section">
+    <h1 class="page-title">Espaços</h1>
+    <p class="page-subtitle">Gerencie seus espaços compartilhados.</p>
+  </div>
+
+  <div class="cards-column">
+    
+    <!-- Card Meus Espaços -->
+    <section class="card-box">
+      <div class="card-header">
+        <h2 class="card-title">Meus espaços</h2>
+        <button class="btn-novo-espaco" (click)="abrirModalNovoEspaco()">+ Novo espaço</button>
+      </div>
+
+      <div class="spaces-list">
+        @if (carregando()) {
+          <div class="loading-state">
+            <p>Carregando espaços...</p>
+          </div>
+        } @else if (listaEspacos().length === 0) {
+          <div class="empty-state">
+            <p>Nenhum espaço encontrado.</p>
+          </div>
+        } @else {
+          @for (item of espacosPaginados(); track item.id ?? item.nome) {
+            <div class="space-item">
+              <div class="space-info">
+                <h3 class="space-name">{{ item.nome }}</h3>
+                <p class="space-type">{{ item.tipo }}</p>
+              </div>
+
+              <div class="space-footer">
+                <span class="space-admin">Administrador: {{ item.admin }}</span>
+                <div class="space-actions">
+                  <button class="btn-action" (click)="gerenciarEspaco(item)">Gerenciar</button>
+                  <button class="btn-action" (click)="abrirEspaco(item)">Abrir espaço</button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Paginador (quando houver mais de 3 espaços) -->
+      @if (totalPaginas() > 1) {
+        <div class="pagination-container">
+          <button 
+            class="pagination-nav-btn" 
+            [disabled]="paginaAtual() === 1" 
+            (click)="paginaAnterior()">
+            ‹ Anterior
+          </button>
+
+          <div class="pagination-pages">
+            @for (pag of paginasArray(); track pag) {
+              <button 
+                class="pagination-page-btn" 
+                [class.active]="pag === paginaAtual()" 
+                (click)="irParaPagina(pag)">
+                {{ pag }}
+              </button>
+            }
+          </div>
+
+          <button 
+            class="pagination-nav-btn" 
+            [disabled]="paginaAtual() === totalPaginas()" 
+            (click)="proximaPagina()">
+            Próxima ›
+          </button>
+        </div>
+      }
+    </section>
+
+    <!-- Card Convites -->
+    <section class="card-box">
+      <h2 class="card-title">Convites</h2>
+      <div class="invites-content">
+        <p class="empty-state">Nenhum convite pendente</p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Modal Gerenciar Espaço (Padrão CoupleGraph) -->
+  @if (modalGerenciarAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalGerenciar()">
+      <div class="modal-dialog modal-couplegraph" (click)="$event.stopPropagation()">
+        
+        <!-- Logo superior -->
+        <div class="modal-header-logo">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+        </div>
+
+        <!-- Título centralizado -->
+        <h2 class="modal-main-title">Gerenciar espaço</h2>
+
+        <!-- Informações do Espaço com Opção de Editar Nome -->
+        <div class="space-details-section">
+          
+          @if (!editandoNome()) {
+            <div class="space-name-row">
+              <h3 class="modal-space-name">{{ espacoSelecionado?.nome }}</h3>
+              <button class="btn-edit-name" (click)="iniciarEdicaoNome()" title="Editar nome do espaço">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+                <span>Editar</span>
+              </button>
+            </div>
+          } @else {
+            <div class="edit-name-box">
+              <label class="input-label" for="editarNomeInput">Nome do espaço</label>
+              <div class="edit-name-input-group">
+                <input 
+                  id="editarNomeInput"
+                  type="text" 
+                  class="input-pill edit-name-input" 
+                  [(ngModel)]="nomeEditado"
+                  (keyup.enter)="salvarNomeEditado()"
+                  placeholder="Novo nome"
+                  autofocus
+                />
+                <button class="btn-pill-primary btn-save" (click)="salvarNomeEditado()">Salvar</button>
+                <button class="btn-pill-outline btn-cancel" (click)="cancelarEdicaoNome()">Cancelar</button>
+              </div>
+              @if (erroEdicaoNome()) {
+                <span class="input-error-msg">{{ erroEdicaoNome() }}</span>
+              }
+            </div>
+          }
+
+          <p class="modal-space-type">{{ espacoSelecionado?.tipo }}</p>
+
+          <!-- Lista de Membros -->
+          <div class="members-list">
+            <!-- Administrador -->
+            <div class="member-entry">
+              <span class="member-entry-name">{{ espacoSelecionado?.admin }}</span>
+              <span class="member-entry-role">Administrador</span>
+            </div>
+
+            <!-- Participantes -->
+            @for (membro of espacoSelecionado?.participantes; track membro) {
+              <div class="member-entry">
+                <div class="member-entry-header">
+                  <span class="member-entry-name">{{ membro }}</span>
+                  <button class="btn-pill-danger-sm" (click)="solicitarRemocaoMembro(membro)">Remover</button>
+                </div>
+                <span class="member-entry-role">Participante</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Se estiver no modo convidar -->
+        @if (modoConvidar()) {
+          <div class="invite-box">
+            <label class="input-label" for="conviteEmail">E-mail da pessoa a convidar</label>
+            <input 
+              id="conviteEmail"
+              type="email" 
+              placeholder="exemplo@email.com" 
+              class="input-pill" 
+              [(ngModel)]="emailConvite"
+              (keyup.enter)="enviarConvite()"
+            />
+            <div class="invite-actions">
+              <button class="btn-pill-primary" (click)="enviarConvite()">Enviar convite</button>
+              <button class="btn-pill-outline" (click)="cancelarConvidar()">Voltar</button>
+            </div>
+          </div>
+        } @else {
+          <!-- Botões de Ação Empilhados -->
+          <div class="modal-stack-actions">
+            <button class="btn-pill-primary" (click)="abrirConvidarPessoa()">+ Convidar pessoa</button>
+            <button class="btn-pill-danger" (click)="solicitarExclusaoEspaco()">Excluir espaço</button>
+            <button class="btn-pill-outline" (click)="fecharModalGerenciar()">Fechar</button>
+          </div>
+        }
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal Confirmação de Exclusão de Espaço -->
+  @if (modalConfirmarExclusaoAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalExclusao()">
+      <div class="modal-dialog modal-couplegraph modal-compact" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+          <button class="btn-close-icon" (click)="fecharModalExclusao()" aria-label="Fechar">✕</button>
+        </div>
+
+        <h2 class="modal-main-title text-center">Excluir espaço?</h2>
+
+        <div class="confirm-content">
+          <p class="confirm-question">Tem certeza que deseja excluir este espaço?</p>
+          
+          <div class="confirm-target-box">
+            <h4 class="target-name">{{ espacoSelecionado?.nome }}</h4>
+            <p class="target-desc">{{ espacoSelecionado?.tipo }}</p>
+          </div>
+        </div>
+
+        <div class="confirm-actions-row">
+          <button class="btn-pill-primary" (click)="cancelarExclusaoEspaco()">Cancelar</button>
+          <button class="btn-pill-danger-solid" (click)="confirmarExclusaoEspaco()">Excluir</button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal Sucesso de Exclusão de Espaço -->
+  @if (modalSucessoExclusaoAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalSucessoExclusao()">
+      <div class="modal-dialog modal-couplegraph modal-compact modal-success" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar centered">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+        </div>
+
+        <div class="success-icon-wrap">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+
+        <h2 class="modal-main-title text-center">Espaço excluído!</h2>
+
+        <p class="success-message">
+          O espaço foi removido com sucesso.
+        </p>
+
+        <div class="modal-stack-actions">
+          <button class="btn-pill-primary btn-concluir" (click)="fecharModalSucessoExclusao()">Concluir</button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal Confirmação de Remoção de Membro -->
+  @if (modalConfirmarRemoverMembroAberto()) {
+    <div class="modal-backdrop" (click)="cancelarRemocaoMembro()">
+      <div class="modal-dialog modal-couplegraph modal-compact" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+          <button class="btn-close-icon" (click)="cancelarRemocaoMembro()" aria-label="Fechar">✕</button>
+        </div>
+
+        <h2 class="modal-main-title text-center">Remover participante?</h2>
+
+        <div class="confirm-content">
+          <p class="confirm-question">Tem certeza que deseja remover este participante?</p>
+          
+          <div class="confirm-target-box">
+            <h4 class="target-name">{{ membroParaRemover() }}</h4>
+            <p class="target-desc">Participante do espaço</p>
+          </div>
+        </div>
+
+        <div class="confirm-actions-row">
+          <button class="btn-pill-primary" (click)="cancelarRemocaoMembro()">Cancelar</button>
+          <button class="btn-pill-danger-solid" (click)="confirmarRemocaoMembro()">Remover</button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal Sucesso de Remoção de Membro -->
+  @if (modalSucessoRemoverMembroAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalSucessoRemocaoMembro()">
+      <div class="modal-dialog modal-couplegraph modal-compact modal-success" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar centered">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+        </div>
+
+        <div class="success-icon-wrap">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+
+        <h2 class="modal-main-title text-center">Participante removido!</h2>
+
+        <p class="success-message">
+          O participante foi removido com sucesso.
+        </p>
+
+        <div class="modal-stack-actions">
+          <button class="btn-pill-primary btn-concluir" (click)="fecharModalSucessoRemocaoMembro()">Concluir</button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal Novo Espaço (Seguindo o mesmo padrão CoupleGraph) -->
+  @if (modalNovoEspacoAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalNovoEspaco()">
+      <div class="modal-dialog modal-couplegraph" (click)="$event.stopPropagation()">
+        
+        <div class="modal-header-logo">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+        </div>
+
+        <h2 class="modal-main-title">Novo espaço</h2>
+
+        <div class="form-body">
+          <label class="input-label" for="novoEspacoInput">Nome do espaço</label>
+          <input 
+            id="novoEspacoInput"
+            type="text" 
+            [(ngModel)]="novoEspacoNome" 
+            placeholder="Ex: Luan & Késia, Finanças Casal..."
+            class="input-pill"
+            autofocus
+            (keyup.enter)="salvarNovoEspaco()"
+          />
+          @if (erroNovoEspaco()) {
+            <span class="input-error-msg">{{ erroNovoEspaco() }}</span>
+          }
+        </div>
+
+        <div class="modal-stack-actions">
+          <button class="btn-pill-primary" [disabled]="!novoEspacoNome.trim()" (click)="salvarNovoEspaco()">
+            Criar espaço
+          </button>
+          <button class="btn-pill-outline" (click)="fecharModalNovoEspaco()">
+            Fechar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>
