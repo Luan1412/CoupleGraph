@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SummaryCard } from '../../shared/components/summary-card/summary-card';
 import { CategoryExpenses } from '../../shared/components/category-expenses/category-expenses';
+import { CategoriaService } from '../../core/services/categoria';
 
 export interface SemanaChartData {
   rotulo: string;
@@ -21,6 +22,7 @@ export interface SemanaChartData {
   styleUrl: './relatorios.scss'
 })
 export class Relatorios {
+  private categoriaService = inject(CategoriaService);
 
   // Período selecionado
   periodoSelecionado = signal<string>('09-2026');
@@ -40,14 +42,18 @@ export class Relatorios {
   receitas = signal<string>('R$ 5.000');
   despesas = signal<string>('R$ 1.750');
 
-  // Gastos por Categoria
-  totalGastosCategoria = signal<number>(1750);
-  categoriasGastos = signal<any[]>([
-    { nome: 'Casa', valor: 800, cor: '#22c55e' },
-    { nome: 'Alimentação', valor: 500, cor: '#3b82f6' },
-    { nome: 'Lazer', valor: 250, cor: '#8b5cf6' },
-    { nome: 'Transporte', valor: 200, cor: '#f97316' }
-  ]);
+  // Gastos por Categoria ligados reativamente ao CategoriaService compartilhado
+  categoriasGastos = computed(() => {
+    return this.categoriaService.categorias().map(c => ({
+      nome: c.nome,
+      valor: c.gasto,
+      cor: c.cor
+    }));
+  });
+
+  totalGastosCategoria = computed(() => {
+    return this.categoriasGastos().reduce((acc, c) => acc + (c.valor || 0), 0);
+  });
 
   // Gráfico Receitas x Despesas por Semana
   dadosSemanas = signal<SemanaChartData[]>([
@@ -78,7 +84,6 @@ export class Relatorios {
       this.saldo.set('R$ 3.250');
       this.receitas.set('R$ 5.000');
       this.despesas.set('R$ 1.750');
-      this.totalGastosCategoria.set(1750);
       this.totalMovimentacoes.set(6);
       this.mediaGastos.set('R$ 400');
     } else {
@@ -86,7 +91,6 @@ export class Relatorios {
       this.saldo.set('R$ 2.100');
       this.receitas.set('R$ 4.500');
       this.despesas.set('R$ 2.400');
-      this.totalGastosCategoria.set(2400);
       this.totalMovimentacoes.set(8);
       this.mediaGastos.set('R$ 300');
     }
