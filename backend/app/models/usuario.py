@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime
-from datetime import datetime
+from sqlalchemy.sql import func
 from app.core.database import Base
 
 class Usuario(Base):
@@ -9,4 +9,4 @@ class Usuario(Base):
     nome = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     senha = Column(String(255), nullable=False) 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

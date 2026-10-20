@@ -58,13 +58,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        user_id_raw = payload.get("sub")
+        if user_id_raw is None:
             raise credentials_exception
-    except JWTError:
+        user_id = int(user_id_raw)
+    except (JWTError, ValueError, TypeError):
         raise credentials_exception
         
-    usuario = db.query(Usuario).filter(Usuario.id == int(user_id)).first()
+    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
     if usuario is None:
         raise credentials_exception
         
