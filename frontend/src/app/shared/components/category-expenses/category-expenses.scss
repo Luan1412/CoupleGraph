@@ -5,8 +5,8 @@
 
 .category-card {
   background-color: var(--cg-branco-cards);
-  border: 2px solid var(--cg-verde-principal);
-  border-radius: 12px;
+  border: 1px solid var(--cg-borda);
+  border-radius: 14px;
   padding: 2rem 1.5rem;
   box-shadow: var(--cg-sombra-suave);
   height: 100%;
@@ -77,6 +77,14 @@
   flex: 1; 
   height: 16px;
   border-radius: 8px;
+  background-color: var(--cg-surface-secondary, #f1f5f9);
+  overflow: hidden;
+
+  :host-context([data-theme="dark"]) &,
+  :host-context(body.dark-theme) &,
+  body.dark-theme & {
+    background-color: var(--cg-border) !important;
+  }
 }
 
 .bar-fill {

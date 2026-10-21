@@ -4,6 +4,7 @@ import { SummaryCard } from '../../shared/components/summary-card/summary-card';
 import { CategoryExpenses } from '../../shared/components/category-expenses/category-expenses';
 import { SpacesWidget } from '../../shared/components/spaces-widget/spaces-widget';
 import { EspacoService } from '../../core/services/espaco';
+import { ThemeService } from '../../core/services/theme';
 
 @Component({
   selector: 'app-dashboard',
@@ -14,7 +15,12 @@ import { EspacoService } from '../../core/services/espaco';
 })
 export class Dashboard implements OnInit {
   private espacoService = inject(EspacoService);
+  themeService = inject(ThemeService);
   private cdr = inject(ChangeDetectorRef);
+
+  saldoTotal = signal<number>(0);
+  receitasTotais = signal<number>(0);
+  despesasTotais = signal<number>(0);
 
   readonly CORES_PALETA = [
     '#22c55e', // Verde
@@ -40,8 +46,8 @@ export class Dashboard implements OnInit {
     this.espacoService.listarMeusEspacos().subscribe({
       next: (dados) => {
         if (dados && dados.length > 0) {
-          const formatador = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
           let somaGastos = 0;
+          let somaSaldo = 0;
           const itensGastos: any[] = [];
 
           const mapeados = dados.map((item, index) => {
@@ -51,6 +57,7 @@ export class Dashboard implements OnInit {
             const despesasVal = item.espaco.despesas ?? 0;
 
             somaGastos += despesasVal;
+            somaSaldo += saldoVal;
 
             if (despesasVal > 0) {
               itensGastos.push({
@@ -64,8 +71,8 @@ export class Dashboard implements OnInit {
               id: item.espaco.id,
               nome: item.espaco.nome,
               tipo: tipo,
-              saldo: formatador.format(saldoVal),
-              despesas: despesasVal > 0 ? formatador.format(despesasVal) : null,
+              saldo: saldoVal,
+              despesas: despesasVal > 0 ? despesasVal : null,
               mostrarAcessar: true
             };
           });
@@ -73,10 +80,16 @@ export class Dashboard implements OnInit {
           this.meusEspacos.set(mapeados);
           this.totalGastosEspacos.set(somaGastos);
           this.gastosPorEspaco.set(itensGastos);
+          this.saldoTotal.set(somaSaldo);
+          this.despesasTotais.set(somaGastos);
+          this.receitasTotais.set(Math.max(0, somaSaldo + somaGastos));
         } else {
           this.meusEspacos.set([]);
           this.totalGastosEspacos.set(0);
           this.gastosPorEspaco.set([]);
+          this.saldoTotal.set(0);
+          this.despesasTotais.set(0);
+          this.receitasTotais.set(0);
         }
         this.carregandoEspacos.set(false);
         this.cdr.detectChanges();

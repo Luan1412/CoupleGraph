@@ -10,6 +10,6 @@
   }
 
   <div class="user-profile">
-    <span>Luan</span>
+    <span>{{ authService.usuarioAtual()?.nome || 'Usuário' }}</span>
   </div>
 </header>

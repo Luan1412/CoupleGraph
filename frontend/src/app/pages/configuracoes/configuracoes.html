@@ -1,0 +1,440 @@
+<div class="configuracoes-container">
+  
+  <!-- Cabeçalho da Página -->
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Configurações</h1>
+      <p class="page-subtitle">Gerencie suas informações de perfil, preferências e segurança da conta</p>
+    </div>
+  </header>
+
+  <!-- Navegação por Abas (Pills) -->
+  <div class="nav-tabs-pill">
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="abaAtiva() === 'perfil'" 
+      (click)="trocarAba('perfil')">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      <span>Meu Perfil</span>
+    </button>
+
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="abaAtiva() === 'seguranca'" 
+      (click)="trocarAba('seguranca')">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      <span>Segurança & Senha</span>
+    </button>
+
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="abaAtiva() === 'preferencias'" 
+      (click)="trocarAba('preferencias')">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Preferências</span>
+    </button>
+
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="abaAtiva() === 'conta'" 
+      (click)="trocarAba('conta')">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      <span>Sessão & Conta</span>
+    </button>
+  </div>
+
+  <!-- Conteúdo Principal -->
+  <main class="settings-card-wrapper">
+    
+    <!-- ABA 1: MEU PERFIL -->
+    @if (abaAtiva() === 'perfil') {
+      <section class="settings-section">
+        
+        <div class="profile-header-card">
+          <div class="avatar-circle">
+            {{ obterIniciais(nomeForm) }}
+          </div>
+          <div class="profile-info-text">
+            <h2 class="profile-name">{{ nomeForm || 'Seu Nome' }}</h2>
+            <p class="profile-email">{{ emailForm }}</p>
+            <div class="profile-meta-badges">
+              <span class="badge-status-active">
+                <span class="status-dot"></span> Conta Ativa
+              </span>
+              <span class="badge-creation-date">
+                {{ dataCriacaoForm }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form class="settings-form" (ngSubmit)="salvarPerfil()">
+          <div class="form-grid">
+            
+            <div class="form-group">
+              <label class="form-label" for="inputNome">Nome Completo</label>
+              <input 
+                id="inputNome"
+                type="text" 
+                class="input-pill" 
+                [(ngModel)]="nomeForm" 
+                name="nome"
+                placeholder="Seu nome"
+                required
+              />
+              <span class="input-hint">Esse nome será exibido nos espaços compartilhados e no cabeçalho.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inputEmail">E-mail de Cadastro</label>
+              <div class="input-with-badge">
+                <input 
+                  id="inputEmail"
+                  type="email" 
+                  class="input-pill disabled" 
+                  [value]="emailForm" 
+                  disabled
+                />
+                <span class="verified-pill">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Verificado
+                </span>
+              </div>
+              <span class="input-hint">O e-mail é utilizado para seu login no CoupleGraph.</span>
+            </div>
+
+          </div>
+
+          @if (erroPerfil()) {
+            <div class="form-alert-error">
+              <span>{{ erroPerfil() }}</span>
+            </div>
+          }
+
+          <div class="form-actions-bar">
+            <button 
+              type="submit" 
+              class="btn-pill-primary" 
+              [disabled]="salvandoPerfil()">
+              {{ salvandoPerfil() ? 'Salvando...' : 'Salvar alterações' }}
+            </button>
+          </div>
+        </form>
+
+      </section>
+    }
+
+    <!-- ABA 2: SEGURANÇA & SENHA -->
+    @if (abaAtiva() === 'seguranca') {
+      <section class="settings-section">
+        
+        <div class="section-lead-box">
+          <div class="lead-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <div class="lead-text">
+            <h3 class="lead-title">Alteração de Senha de Acesso</h3>
+            <p class="lead-desc">
+              Para maior segurança, utilize pelo menos <strong>8 caracteres</strong>, contendo no mínimo 
+              uma <strong>letra maiúscula</strong> e um <strong>número</strong>.
+            </p>
+          </div>
+        </div>
+
+        <form class="settings-form" (ngSubmit)="salvarSenha()">
+          <div class="form-grid single-col">
+            
+            <div class="form-group">
+              <label class="form-label" for="inputSenhaAtual">Senha Atual</label>
+              <div class="password-input-wrap">
+                <input 
+                  id="inputSenhaAtual"
+                  [type]="mostrarSenhaAtual ? 'text' : 'password'" 
+                  class="input-pill" 
+                  [(ngModel)]="senhaAtualForm" 
+                  name="senhaAtual"
+                  placeholder="Digite sua senha atual"
+                  required
+                />
+                <button 
+                  type="button" 
+                  class="btn-toggle-eye" 
+                  (click)="mostrarSenhaAtual = !mostrarSenhaAtual"
+                  [attr.aria-label]="mostrarSenhaAtual ? 'Ocultar senha' : 'Ver senha'">
+                  {{ mostrarSenhaAtual ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inputNovaSenha">Nova Senha</label>
+              <div class="password-input-wrap">
+                <input 
+                  id="inputNovaSenha"
+                  [type]="mostrarNovaSenha ? 'text' : 'password'" 
+                  class="input-pill" 
+                  [(ngModel)]="novaSenhaForm" 
+                  name="novaSenha"
+                  placeholder="Digite sua nova senha"
+                  required
+                />
+                <button 
+                  type="button" 
+                  class="btn-toggle-eye" 
+                  (click)="mostrarNovaSenha = !mostrarNovaSenha"
+                  [attr.aria-label]="mostrarNovaSenha ? 'Ocultar senha' : 'Ver senha'">
+                  {{ mostrarNovaSenha ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inputConfirmarSenha">Confirmar Nova Senha</label>
+              <input 
+                id="inputConfirmarSenha"
+                type="password" 
+                class="input-pill" 
+                [(ngModel)]="confirmarNovaSenhaForm" 
+                name="confirmarNovaSenha"
+                placeholder="Repita a nova senha"
+                required
+              />
+            </div>
+
+          </div>
+
+          @if (erroSenha()) {
+            <div class="form-alert-error">
+              <span>{{ erroSenha() }}</span>
+            </div>
+          }
+
+          <div class="form-actions-bar">
+            <button 
+              type="submit" 
+              class="btn-pill-primary" 
+              [disabled]="salvandoSenha()">
+              {{ salvandoSenha() ? 'Atualizando...' : 'Atualizar senha' }}
+            </button>
+          </div>
+        </form>
+
+      </section>
+    }
+
+    <!-- ABA 3: PREFERÊNCIAS -->
+    @if (abaAtiva() === 'preferencias') {
+      <section class="settings-section">
+        
+        <div class="preferences-list">
+          
+          <!-- Tema do Aplicativo (Claro / Escuro) -->
+          <div class="preference-item theme-item">
+            <div class="pref-info">
+              <h4 class="pref-title">Tema do Aplicativo</h4>
+              <p class="pref-desc">Alterne entre o tema Claro e o tema Escuro para personalizar sua experiência visual em todo o CoupleGraph.</p>
+            </div>
+            <div class="theme-switcher-group">
+              <button 
+                type="button" 
+                class="btn-theme-choice" 
+                [class.active]="themeService.temaAtual() === 'claro'"
+                (click)="selecionarTema('claro')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <span>Tema Claro</span>
+                @if (themeService.temaAtual() === 'claro') {
+                  <span class="active-dot"></span>
+                }
+              </button>
+
+              <button 
+                type="button" 
+                class="btn-theme-choice" 
+                [class.active]="themeService.temaAtual() === 'escuro'"
+                (click)="selecionarTema('escuro')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <span>Tema Escuro</span>
+                @if (themeService.temaAtual() === 'escuro') {
+                  <span class="active-dot"></span>
+                }
+              </button>
+            </div>
+          </div>
+
+          <!-- Moeda Principal -->
+          <div class="preference-item">
+            <div class="pref-info">
+              <h4 class="pref-title">Moeda Principal</h4>
+              <p class="pref-desc">Moeda utilizada na exibição de relatórios, resumos e movimentações.</p>
+            </div>
+            <div class="pref-control">
+              <select class="select-pill-pref" [value]="themeService.moedaPadrao()" (change)="alterarMoeda($event)">
+                <option value="BRL">Real Brasileiro (R$)</option>
+                <option value="USD">Dólar Americano ($)</option>
+                <option value="EUR">Euro (€)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Alertas de Orçamento -->
+          <div class="preference-item">
+            <div class="pref-info">
+              <h4 class="pref-title">Alertas de Orçamento</h4>
+              <p class="pref-desc">Receber aviso visual nas categorias quando atingirem 80% do limite.</p>
+            </div>
+            <div class="pref-control">
+              <label class="toggle-switch">
+                <input type="checkbox" [checked]="themeService.alertaOrcamento()" (change)="alternarAlertaOrcamento()">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Resumo Financeiro Semanal -->
+          <div class="preference-item">
+            <div class="pref-info">
+              <h4 class="pref-title">Resumo Financeiro Semanal</h4>
+              <p class="pref-desc">Destaque dos principais balanços e categorias na tela inicial.</p>
+            </div>
+            <div class="pref-control">
+              <label class="toggle-switch">
+                <input type="checkbox" [checked]="themeService.resumoSemanal()" (change)="alternarResumoSemanal()">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+    }
+
+    <!-- ABA 4: SESSÃO & CONTA -->
+    @if (abaAtiva() === 'conta') {
+      <section class="settings-section">
+        
+        <div class="account-security-card">
+          <div class="account-header">
+            <div class="account-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0a2540" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <div class="account-info">
+              <h3 class="account-title">Sessão Ativa no Navegador</h3>
+              <p class="account-desc">Você está conectado ao CoupleGraph com autenticação segura via Token JWT.</p>
+            </div>
+          </div>
+
+          <div class="session-box">
+            <div class="session-item">
+              <span class="session-label">Status da Conexão:</span>
+              <span class="session-status"><span class="status-dot"></span> Autenticado</span>
+            </div>
+            <div class="session-item">
+              <span class="session-label">Versão do Sistema:</span>
+              <span class="session-val">CoupleGraph v1.0.0</span>
+            </div>
+          </div>
+
+          <div class="logout-action-area">
+            <div class="logout-desc">
+              <h4>Encerrar Sessão</h4>
+              <p>Ao sair, seu token de acesso será removido deste navegador e será necessário fazer login novamente.</p>
+            </div>
+            <button type="button" class="btn-pill-danger" (click)="abrirModalLogout()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              <span>Sair da conta</span>
+            </button>
+          </div>
+        </div>
+
+      </section>
+    }
+
+  </main>
+
+  <!-- Modal Confirmação de Logout -->
+  @if (modalLogoutAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalLogout()">
+      <div class="modal-dialog modal-couplegraph modal-confirm-dialog" (click)="$event.stopPropagation()">
+        
+        <div class="modal-top-bar">
+          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
+          <button type="button" class="btn-close-icon" (click)="fecharModalLogout()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="confirm-icon-box">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </div>
+
+        <h2 class="modal-main-title text-center">Deseja realmente sair?</h2>
+        <p class="modal-subtitle text-center">
+          Você será desconectado do CoupleGraph e redirecionado para a tela de login.
+        </p>
+
+        <div class="confirm-actions-row">
+          <button type="button" class="btn-pill-primary" (click)="fecharModalLogout()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-pill-danger" (click)="confirmarLogout()">
+            Sim, sair
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Toast de Sucesso Flutuante -->
+  @if (toastSucesso()) {
+    <div class="toast-sucesso">
+      <div class="toast-icone">✓</div>
+      <span class="toast-texto">{{ toastSucesso() }}</span>
+    </div>
+  }
+
+</div>

@@ -1,10 +1,11 @@
-import { Component, signal, inject, OnInit, ChangeDetectorRef, computed } from '@angular/core';
+import { Component, signal, inject, OnInit, ChangeDetectorRef, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SummaryCard } from '../../shared/components/summary-card/summary-card';
 import { CategoryExpenses } from '../../shared/components/category-expenses/category-expenses';
 import { CategoriaService } from '../../core/services/categoria';
 import { MovimentacaoService, MovimentacaoItem } from '../../core/services/movimentacao';
+import { ThemeService } from '../../core/services/theme';
 
 export interface SemanaChartData {
   rotulo: string;
@@ -25,7 +26,10 @@ export interface SemanaChartData {
 export class Relatorios implements OnInit {
   private categoriaService = inject(CategoriaService);
   private movimentacaoService = inject(MovimentacaoService);
+  themeService = inject(ThemeService);
   private cdr = inject(ChangeDetectorRef);
+
+  private itensCarregados = signal<MovimentacaoItem[]>([]);
 
   // Controle reativo de datas do calendário usando Signals
   presetAtivo = signal<string>('mes_atual');
@@ -37,11 +41,11 @@ export class Relatorios implements OnInit {
   carregando = signal<boolean>(false);
 
   // Cards de Resumo
-  saldo = signal<string>('R$ 0,00');
+  saldo = signal<string>('');
   saldoSubtitulo = signal<string>('Saldo no período');
   saldoNegativo = signal<boolean>(false);
-  receitas = signal<string>('R$ 0,00');
-  despesas = signal<string>('R$ 0,00');
+  receitas = signal<string>('');
+  despesas = signal<string>('');
 
   // Gastos por Categoria
   categoriasGastos = signal<{ nome: string; valor: number; cor: string }[]>([]);
@@ -52,7 +56,7 @@ export class Relatorios implements OnInit {
 
   // Resumo do Período
   totalMovimentacoes = signal<number>(0);
-  mediaGastos = signal<string>('R$ 0,00');
+  mediaGastos = signal<string>('');
 
   // Mensagem calculada dinamicamente a partir dos Signals aplicados
   mensagemPeriodo = computed(() => {
@@ -61,6 +65,15 @@ export class Relatorios implements OnInit {
     if (!inicio || !fim) return '';
     return `Exibindo lançamentos de ${this.formatarDataBr(inicio)} até ${this.formatarDataBr(fim)}`;
   });
+
+  constructor() {
+    effect(() => {
+      // Reagir a mudanças de moeda na preferência
+      this.themeService.moedaPadrao();
+      const itens = this.itensCarregados();
+      this.processarDados(itens);
+    });
+  }
 
   ngOnInit(): void {
     this.aplicarPreset('mes_atual');
@@ -158,12 +171,15 @@ export class Relatorios implements OnInit {
 
     this.movimentacaoService.listar(filtros).subscribe({
       next: (itens) => {
-        this.processarDados(itens || []);
+        const lista = itens || [];
+        this.itensCarregados.set(lista);
+        this.processarDados(lista);
         this.carregando.set(false);
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Erro ao listar movimentações para o relatório:', err);
+        this.itensCarregados.set([]);
         this.processarDados([]);
         this.carregando.set(false);
         this.cdr.detectChanges();
@@ -338,11 +354,6 @@ export class Relatorios implements OnInit {
   }
 
   formatarMoeda(valor: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(valor || 0);
+    return this.themeService.formatarMoeda(valor);
   }
 }

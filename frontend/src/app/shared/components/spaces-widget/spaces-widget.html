@@ -21,10 +21,10 @@
           <span class="space-type">{{ espaco.tipo }}</span>
 
           <div class="space-details">
-            <span class="info-text"><strong>Saldo:</strong> R$ {{ espaco.saldo }}</span>
+            <span class="info-text"><strong>Saldo:</strong> {{ formatarMoeda(espaco.saldo) }}</span>
             
             @if (espaco.despesas) {
-              <span class="info-text"><strong>Despesas:</strong> R$ {{ espaco.despesas }}</span>
+              <span class="info-text"><strong>Despesas:</strong> {{ formatarMoeda(espaco.despesas) }}</span>
             }
           </div>
 

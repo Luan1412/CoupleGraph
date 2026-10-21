@@ -6,6 +6,7 @@ import { SummaryCard } from '../../shared/components/summary-card/summary-card';
 import { EspacoService, EspacoUsuarioModel } from '../../core/services/espaco';
 import { CategoriaService, CategoriaItem } from '../../core/services/categoria';
 import { MovimentacaoService, MovimentacaoItem } from '../../core/services/movimentacao';
+import { ThemeService } from '../../core/services/theme';
 
 export interface BalancoEspaco {
   id: number;
@@ -27,6 +28,7 @@ export class Financas implements OnInit {
   private espacoService = inject(EspacoService);
   private categoriaService = inject(CategoriaService);
   private movimentacaoService = inject(MovimentacaoService);
+  themeService = inject(ThemeService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
@@ -303,12 +305,7 @@ export class Financas implements OnInit {
   }
 
   formatarMoeda(valor: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }).format(valor || 0);
+    return this.themeService.formatarMoeda(valor);
   }
 
   private formatarDataIso(data: Date): string {

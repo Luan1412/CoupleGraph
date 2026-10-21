@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { ThemeService } from '../../../core/services/theme';
 
 @Component({
   selector: 'app-spaces-widget',
@@ -11,11 +12,17 @@ import { Router } from '@angular/router';
 })
 export class SpacesWidget {
   private router = inject(Router);
+  themeService = inject(ThemeService);
 
   @Input() espacos: any[] = [];
   @Input() carregando: boolean = false;
   @Output() acessar = new EventEmitter<any>();
   @Output() criar = new EventEmitter<void>();
+
+  formatarMoeda(valor: any): string {
+    if (valor === null || valor === undefined || valor === '') return '';
+    return this.themeService.formatarMoeda(valor);
+  }
 
   onCriar(): void {
     if (this.criar.observed) {

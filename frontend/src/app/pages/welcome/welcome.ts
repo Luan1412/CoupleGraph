@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { ThemeService } from '../../core/services/theme';
 
 @Component({
   selector: 'app-welcome',
@@ -9,6 +10,7 @@ import { Router } from '@angular/router';
 })
 export class Welcome {
   private router = inject(Router);
+  themeService = inject(ThemeService);
 
   irParaCadastro() {
     this.router.navigate(['/cadastro']);

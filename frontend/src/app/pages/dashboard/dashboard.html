@@ -4,7 +4,7 @@
   <div class="cards-grid">
     <app-summary-card 
       title="Saldo disponível" 
-      value="R$ 3.250" 
+      [value]="themeService.formatarMoeda(saldoTotal())" 
       icon="/icons/ic-saldo.svg" 
       subtitle="Disponível atualmente" 
       [highlight]="true" 
@@ -13,7 +13,7 @@
 
     <app-summary-card 
       title="Receitas" 
-      value="R$ 5.000" 
+      [value]="themeService.formatarMoeda(receitasTotais())" 
       icon="/icons/ic-receitas.svg" 
       [highlight]="true"
       iconBgClass="bg-green-light">
@@ -21,7 +21,7 @@
 
     <app-summary-card 
       title="Despesas" 
-      value="R$ 1.750" 
+      [value]="themeService.formatarMoeda(despesasTotais())" 
       icon="/icons/ic-despesas.svg" 
       [highlight]="true"
       iconBgClass="bg-red-light">

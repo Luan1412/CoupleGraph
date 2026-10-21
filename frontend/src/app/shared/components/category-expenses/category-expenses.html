@@ -4,7 +4,7 @@
 
   <div class="total-section">
     <span class="total-label">Total de gastos</span>
-    <h2 class="total-value">R$ {{ formatarValor(total) }}</h2>
+    <h2 class="total-value">{{ formatarMoeda(total) }}</h2>
   </div>
 
   <div class="categories-list">
@@ -22,7 +22,7 @@
                  [style.background-color]="item.cor">
             </div>
           </div>
-          <span class="cat-value" [style.color]="item.cor">R$ {{ formatarValor(item.valor) }}</span>
+          <span class="cat-value" [style.color]="item.cor">{{ formatarMoeda(item.valor) }}</span>
         </div>
       }
     }

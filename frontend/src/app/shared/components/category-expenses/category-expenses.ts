@@ -1,12 +1,17 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ThemeService } from '../../../core/services/theme';
 
 @Component({
   selector: 'app-category-expenses',
   standalone: true,
+  imports: [CommonModule],
   templateUrl: './category-expenses.html',
   styleUrl: './category-expenses.scss'
 })
 export class CategoryExpenses {
+  themeService = inject(ThemeService);
+
   @Input() titulo: string = 'Gastos por espaço';
   @Input() total: number = 0;
   @Input() itens: any[] = [];
@@ -22,10 +27,7 @@ export class CategoryExpenses {
     return Math.min(100, Math.max(0, (valor / this.total) * 100));
   }
 
-  formatarValor(valor: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }).format(valor || 0);
+  formatarMoeda(valor: number): string {
+    return this.themeService.formatarMoeda(valor);
   }
 }

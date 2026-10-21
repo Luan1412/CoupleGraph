@@ -6,6 +6,7 @@ import { SummaryCard } from '../../shared/components/summary-card/summary-card';
 import { MovimentacaoService, MovimentacaoItem, MovimentacaoResumo } from '../../core/services/movimentacao';
 import { EspacoService, EspacoUsuarioModel } from '../../core/services/espaco';
 import { CategoriaService } from '../../core/services/categoria';
+import { ThemeService } from '../../core/services/theme';
 
 @Component({
   selector: 'app-movimentacoes',
@@ -18,6 +19,7 @@ export class Movimentacoes implements OnInit {
   private movimentacaoService = inject(MovimentacaoService);
   private espacoService = inject(EspacoService);
   private categoriaService = inject(CategoriaService);
+  themeService = inject(ThemeService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
@@ -542,12 +544,7 @@ export class Movimentacoes implements OnInit {
   }
 
   formatarMoeda(valor: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(valor || 0);
+    return this.themeService.formatarMoeda(valor);
   }
 
   formatarData(dataStr: string): string {

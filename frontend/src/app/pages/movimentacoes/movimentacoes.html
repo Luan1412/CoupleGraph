@@ -373,7 +373,7 @@
           <div class="form-group">
             <label class="form-label" for="valorInput">Valor *</label>
             <div class="valor-input-wrapper">
-              <span class="currency-sign">R$</span>
+              <span class="currency-sign">{{ themeService.obterSimbolo() }}</span>
               <input 
                 id="valorInput"
                 type="number" 
@@ -552,7 +552,7 @@
           <div class="form-group">
             <label class="form-label" for="valorEdicaoInput">Valor *</label>
             <div class="valor-input-wrapper">
-              <span class="currency-sign">R$</span>
+              <span class="currency-sign">{{ themeService.obterSimbolo() }}</span>
               <input 
                 id="valorEdicaoInput"
                 type="number" 

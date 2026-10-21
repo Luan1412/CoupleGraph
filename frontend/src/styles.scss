@@ -55,21 +55,342 @@ input.ng-valid.ng-touched {
   border-color: var(--cg-verde-principal) !important;
 }
 
-// Variáveis de cor
+// ==========================================
+// Paleta Oficial CoupleGraph & Variáveis CSS
+// ==========================================
 :root {
-  
-  --cg-texto-escuro-logo:#111827;
-  --cg-verde-principal: #16A34A;
-  --cg-azul-marinho: #0f172a;
-  --cg-vermelho-cancelamento: #ef4444;
-  --cg-branco-cards: #ffffff;
-  --cg-botao-azul: #164474;
-  --cg-bg-padrao: #f8fafc;
-  --cg-texto-logo: #111827;
-  --cg-texto-principal: #000000;
-  --cg-texto-secundario: #64748b;
-  --cg-borda: #e2e8f0;
-  --cg-sombra-suave: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --cg-bg: #f1f5f9;                    // Fundo que contrasta e destaca os cards brancos
+  --cg-surface: #ffffff;               // Superfície principal branca pura para os cards
+  --cg-surface-secondary: #f8fafc;     // Superfície secundária (sub-cards, inputs, áreas internas)
+  --cg-border: #e2e8f0;                // Borda e divisores sutis
+  --cg-text: #0f172a;
+  --cg-text-secondary: #64748b;
+  --cg-text-muted: #94a3b8;
+  --cg-green: #16a34a;
+  --cg-green-hover: #15803d;
+  --cg-blue: #3882f6;
+  --cg-purple: #8b5cf6;
+  --cg-orange: #f59e0b;
+  --cg-red: #ef4444;
+
+  // Compatibility Aliases com variáveis legadas
+  --cg-bg-padrao: var(--cg-bg);
+  --cg-branco-cards: var(--cg-surface);
+  --cg-texto-escuro-logo: var(--cg-text);
+  --cg-texto-logo: var(--cg-text);
+  --cg-texto-principal: var(--cg-text);
+  --cg-texto-secundario: var(--cg-text-secondary);
+  --cg-borda: var(--cg-border);
+  --cg-verde-principal: var(--cg-green);
+  --cg-vermelho-cancelamento: var(--cg-red);
+  --cg-botao-azul: #0a2540;
+  --cg-sombra-suave: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+}
+
+// ----------------------------------------------------
+// Presença e destaque visual dos Cards em toda a aplicação
+// ----------------------------------------------------
+.card-box,
+.settings-card-wrapper,
+.summary-card,
+.category-card,
+.spaces-widget-container,
+.periodo-card,
+.card-filtro-box {
+  background-color: var(--cg-surface) !important;
+  border: 1px solid var(--cg-border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--cg-sombra-suave) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.12) !important;
+  }
+}
+
+.space-balance-card,
+.space-card {
+  background-color: var(--cg-surface-secondary);
+  border: 1px solid var(--cg-border) !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--cg-green) !important;
+  }
+}
+
+// ==========================================
+// Tema Escuro Oficial — CoupleGraph Dark
+// ==========================================
+[data-theme="dark"],
+html.dark-theme,
+body.dark-theme {
+  color-scheme: dark;
+
+  // 1. Paleta oficial CoupleGraph Dark especificada:
+  --cg-bg: #081220;                    // Fundo principal geral da aplicação
+  --cg-surface: #111827;               // Superfície principal (Cards, modais, headers, sidebar)
+  --cg-surface-secondary: #1A2332;     // Superfície secundária (Inputs, menus, áreas internas, sub-cards)
+  --cg-border: #24324A;                // Bordas e divisores (Separação sutil entre elementos)
+  --cg-text: #F8FAFC;                  // Texto principal (Títulos, valores e informações importantes)
+  --cg-text-secondary: #94A3B8;        // Texto secundário (Descrições, legendas, datas, inputs)
+  --cg-text-muted: #64748B;            // Texto desativado / placeholders
+  --cg-green: #22C55E;                 // Verde principal (Logo, ações principais, valores positivos)
+  --cg-green-hover: #16A34A;           // Verde hover / destaque dos botões
+  --cg-blue: #3882F6;                  // Azul informativo / categorias
+  --cg-purple: #8B5CF6;                // Roxo (lazer)
+  --cg-orange: #F59E0B;                // Laranja (transporte)
+  --cg-red: #EF4444;                   // Vermelho (exclusão, erros, despesas)
+
+  // Compatibility Aliases
+  --cg-bg-padrao: var(--cg-bg);
+  --cg-branco-cards: var(--cg-surface);
+  --cg-texto-escuro-logo: var(--cg-text);
+  --cg-texto-logo: var(--cg-text);
+  --cg-texto-principal: var(--cg-text);
+  --cg-texto-secundario: var(--cg-text-secondary);
+  --cg-borda: var(--cg-border);
+  --cg-verde-principal: var(--cg-green);
+  --cg-vermelho-cancelamento: var(--cg-red);
+  --cg-botao-azul: var(--cg-green);
+  --cg-sombra-suave: 0 4px 14px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+
+  background-color: var(--cg-bg);
+  color: var(--cg-text);
+
+  // Seleção de texto
+  ::selection {
+    background-color: var(--cg-green);
+    color: #081220;
+  }
+
+  // ----------------------------------------------------
+  // Inputs, selects e textareas globais no modo escuro
+  // (Padronizado idêntico ao e-mail cadastrado das configs)
+  // ----------------------------------------------------
+  input:not([type="checkbox"]):not([type="radio"]), 
+  select, 
+  textarea,
+  .input-pill,
+  .input-search-pill,
+  .select-pill,
+  .select-pill-pref,
+  .input-date-pill {
+    background-color: var(--cg-surface-secondary) !important;
+    color: var(--cg-text-secondary) !important;
+    border: 1.5px solid var(--cg-border) !important;
+    transition: all 0.2s ease;
+
+    &::placeholder {
+      color: var(--cg-text-muted) !important;
+    }
+
+    &:focus {
+      border-color: var(--cg-green) !important;
+      color: var(--cg-text) !important;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25) !important;
+    }
+
+    &.disabled, &:disabled {
+      background-color: var(--cg-surface-secondary) !important;
+      color: var(--cg-text-secondary) !important;
+      border-color: var(--cg-border) !important;
+      cursor: not-allowed;
+      opacity: 0.85;
+    }
+  }
+
+  // Inputs de data no modo escuro
+  input[type="date"], .input-date-pill {
+    background-color: var(--cg-surface-secondary) !important;
+    border-color: var(--cg-border) !important;
+    color: var(--cg-text-secondary) !important;
+    color-scheme: dark !important;
+
+    &::-webkit-calendar-picker-indicator {
+      filter: invert(0.8);
+      cursor: pointer;
+    }
+  }
+
+  // Header no modo escuro
+  .header {
+    background-color: var(--cg-surface) !important;
+    border-bottom: 1px solid var(--cg-border) !important;
+  }
+
+  // Sidebar unificada no tema escuro (Superfície #111827 + borda #24324A)
+  .sidebar-container, .sidebar {
+    background-color: var(--cg-surface) !important;
+    border-right: 1px solid var(--cg-border) !important;
+  }
+
+  // Cards e modais principais (#111827 + borda #24324A)
+  .card-box,
+  .settings-card-wrapper,
+  .summary-card,
+  .category-card,
+  .spaces-widget-container,
+  .periodo-card,
+  .card-filtro-box {
+    background-color: var(--cg-surface) !important;
+    border: 1px solid var(--cg-border) !important;
+    color: var(--cg-text) !important;
+    box-shadow: var(--cg-sombra-suave) !important;
+  }
+
+  // Modais no modo escuro
+  .modal-dialog.modal-couplegraph {
+    background-color: var(--cg-surface) !important;
+    border: 1px solid var(--cg-border) !important;
+    color: var(--cg-text) !important;
+
+    .btn-close-icon {
+      color: var(--cg-text-secondary);
+      &:hover {
+        background-color: var(--cg-surface-secondary);
+        color: var(--cg-text);
+      }
+    }
+  }
+
+  // Tabelas no modo escuro
+  table th {
+    background-color: var(--cg-surface-secondary) !important;
+    color: var(--cg-text-secondary) !important;
+    border-bottom: 1px solid var(--cg-border) !important;
+  }
+
+  table td {
+    border-bottom: 1px solid var(--cg-border) !important;
+    color: var(--cg-text) !important;
+  }
+
+  table tr:hover td, .mov-row:hover td {
+    background-color: rgba(34, 197, 94, 0.08) !important;
+  }
+
+  // Superfície secundária para subcards e listas internas (#1A2332)
+  .space-balance-card, 
+  .space-card,
+  .preference-item,
+  .session-box {
+    background-color: var(--cg-surface-secondary) !important;
+    border: 1px solid var(--cg-border) !important;
+    color: var(--cg-text) !important;
+
+    .space-title, .space-name, .space-type, .pref-title, .session-val {
+      color: var(--cg-text) !important;
+    }
+
+    .space-subtitle, .info-text, .pref-desc, .session-label {
+      color: var(--cg-text-secondary) !important;
+    }
+  }
+
+  // Badges, tags e filtros
+  .cat-pill-tag, .tag-pill, .badge-creation-date, .tabela-badge, .week-labels-pill {
+    background-color: var(--cg-surface-secondary) !important;
+    border-color: var(--cg-border) !important;
+    color: var(--cg-text-secondary) !important;
+  }
+
+  .tipo-toggle-group {
+    border-bottom-color: var(--cg-border) !important;
+  }
+
+  .preset-pill:not(.active),
+  .tipo-pill:not(.active),
+  .btn-limpar-filtros {
+    background-color: var(--cg-surface-secondary) !important;
+    border-color: var(--cg-border) !important;
+    color: var(--cg-text-secondary) !important;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      color: var(--cg-text) !important;
+      border-color: var(--cg-text-muted) !important;
+    }
+  }
+
+  .preset-pill.active,
+  .tipo-pill.active,
+  .tab-pill.active {
+    background-color: var(--cg-green) !important;
+    border-color: var(--cg-green) !important;
+    color: #081220 !important;
+    font-weight: 800 !important;
+  }
+
+  // Botões principais no modo escuro: Verde reconhecível (#22C55E) com hover (#16A34A)
+  .btn-action-primary,
+  .btn-aplicar-filtro,
+  .btn-novo-espaco,
+  .btn-acessar,
+  .btn-criar,
+  .btn-pill-primary {
+    background-color: var(--cg-green) !important;
+    color: #081220 !important;
+    font-weight: 800 !important;
+    border: none !important;
+
+    .btn-icon {
+      stroke: #081220 !important;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: var(--cg-green-hover) !important;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35) !important;
+    }
+  }
+
+  // Botões outline no tema escuro
+  .btn-action-outline,
+  .btn-ajustar-orcamento,
+  .btn-gerenciar-espacos {
+    background-color: transparent !important;
+    border: 1.5px solid var(--cg-green) !important;
+    color: var(--cg-green) !important;
+
+    .btn-icon {
+      stroke: var(--cg-green) !important;
+    }
+
+    &:hover {
+      background-color: rgba(34, 197, 94, 0.15) !important;
+      color: var(--cg-green) !important;
+    }
+  }
+
+  // Barras de progresso e trilhas de categorias (SEM BARRA BRANCA!)
+  .budget-progress-track,
+  .bar-track {
+    background-color: var(--cg-border) !important; // #24324A
+  }
+
+  // Feedback de período em verde oficial
+  .periodo-feedback-tag {
+    color: var(--cg-green) !important;
+  }
+
+  // Card de insight no modo escuro
+  .card-insight {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    border-color: var(--cg-green) !important;
+
+    .insight-icon-box {
+      background-color: rgba(34, 197, 94, 0.22) !important;
+    }
+
+    .insight-title {
+      color: var(--cg-green) !important;
+    }
+
+    .insight-desc {
+      color: var(--cg-text) !important;
+    }
+  }
 }
 
 .mat-mdc-dialog-container {
@@ -80,3 +401,4 @@ input.ng-valid.ng-touched {
   border-radius: 8px;
   font-weight: 500;
 }
+
