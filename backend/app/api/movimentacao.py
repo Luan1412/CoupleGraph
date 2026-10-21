@@ -78,6 +78,8 @@ def listar_movimentacoes(
     busca: Optional[str] = Query(None, description="Buscar texto na descrição"),
     mes: Optional[int] = Query(None, ge=1, le=12, description="Mês da movimentação"),
     ano: Optional[int] = Query(None, ge=2000, le=2100, description="Ano da movimentação"),
+    data_inicio: Optional[str] = Query(None, description="Data inicial no formato YYYY-MM-DD"),
+    data_fim: Optional[str] = Query(None, description="Data final no formato YYYY-MM-DD"),
     db: Session = Depends(get_db),
     usuario_atual: Usuario = Depends(get_current_user)
 ):
@@ -123,6 +125,20 @@ def listar_movimentacoes(
     if mes:
         query = query.filter(extract('month', Movimentacao.data) == mes)
 
+    if data_inicio and data_inicio.strip():
+        try:
+            dt_inicio = datetime.strptime(data_inicio.strip(), "%Y-%m-%d")
+            query = query.filter(Movimentacao.data >= dt_inicio)
+        except ValueError:
+            pass
+
+    if data_fim and data_fim.strip():
+        try:
+            dt_fim = datetime.strptime(data_fim.strip(), "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(Movimentacao.data <= dt_fim)
+        except ValueError:
+            pass
+
     movs = query.order_by(Movimentacao.data.desc(), Movimentacao.id.desc()).all()
 
     resposta = []
@@ -151,6 +167,8 @@ def obter_resumo(
     espaco_id: Optional[int] = Query(None),
     mes: Optional[int] = Query(None, ge=1, le=12),
     ano: Optional[int] = Query(None, ge=2000, le=2100),
+    data_inicio: Optional[str] = Query(None, description="Data inicial no formato YYYY-MM-DD"),
+    data_fim: Optional[str] = Query(None, description="Data final no formato YYYY-MM-DD"),
     db: Session = Depends(get_db),
     usuario_atual: Usuario = Depends(get_current_user)
 ):
@@ -179,6 +197,20 @@ def obter_resumo(
 
     if mes:
         query = query.filter(extract('month', Movimentacao.data) == mes)
+
+    if data_inicio and data_inicio.strip():
+        try:
+            dt_inicio = datetime.strptime(data_inicio.strip(), "%Y-%m-%d")
+            query = query.filter(Movimentacao.data >= dt_inicio)
+        except ValueError:
+            pass
+
+    if data_fim and data_fim.strip():
+        try:
+            dt_fim = datetime.strptime(data_fim.strip(), "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(Movimentacao.data <= dt_fim)
+        except ValueError:
+            pass
 
     movs = query.all()
 

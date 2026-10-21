@@ -697,6 +697,142 @@
     font-weight: 600;
     margin: 0 0 1.5rem 0;
   }
+
+  .confirm-actions-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.1rem;
+    margin-top: 1.5rem;
+
+    button {
+      min-width: 130px;
+    }
+  }
+
+  .btn-pill-primary {
+    background-color: var(--cg-botao-azul, #0a2540);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover:not(:disabled) {
+      background-color: #0f3256;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(10, 37, 64, 0.25);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-pill-danger-solid {
+    background-color: #dc2626;
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    padding: 0.75rem 1.8rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: #b91c1c;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-pill-danger {
+    background-color: transparent;
+    border: 1.5px solid #f87171;
+    color: #ef4444;
+    border-radius: 9999px;
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+
+    svg {
+      stroke: #ef4444;
+      transition: stroke 0.2s ease;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: #fee2e2;
+      border-color: #ef4444;
+      color: #dc2626;
+
+      svg {
+        stroke: #dc2626;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-pill-outline {
+    background-color: transparent;
+    border: 1.5px solid #cbd5e1;
+    color: #64748b;
+    border-radius: 9999px;
+    padding: 0.75rem 1.8rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: #f8fafc;
+      border-color: #94a3b8;
+      color: #334155;
+    }
+  }
+
+  .modal-stack-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 0.75rem;
+
+    .btn-pill-primary,
+    .btn-pill-danger,
+    .btn-pill-danger-solid,
+    .btn-pill-outline {
+      width: 100%;
+    }
+  }
 }
 
 .modal-tipo-toggle {
@@ -930,121 +1066,6 @@
     padding: 0.65rem 0.95rem;
     font-size: 0.84rem;
     font-weight: 700;
-  }
-
-  .modal-stack-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    margin-top: 0.75rem;
-
-    .btn-pill-primary {
-      width: 100%;
-      background-color: var(--cg-botao-azul, #0a2540);
-      color: #ffffff;
-      border: none;
-      border-radius: 9999px;
-      padding: 0.8rem;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover:not(:disabled) {
-        background-color: #0f3256;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.25);
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-    }
-
-    .btn-pill-danger {
-      width: 100%;
-      background-color: transparent;
-      border: 1.5px solid #fca5a5;
-      color: #ef4444;
-      border-radius: 9999px;
-      padding: 0.72rem;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      transition: all 0.2s ease;
-
-      svg {
-        stroke: #ef4444;
-        transition: stroke 0.2s ease;
-      }
-
-      &:hover:not(:disabled) {
-        background-color: #fef2f2;
-        border-color: #ef4444;
-        color: #dc2626;
-
-        svg {
-          stroke: #dc2626;
-        }
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-
-    .btn-pill-danger-solid {
-      width: 100%;
-      background-color: #dc2626;
-      color: #ffffff;
-      border: none;
-      border-radius: 9999px;
-      padding: 0.8rem;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      transition: all 0.2s ease;
-
-      &:hover:not(:disabled) {
-        background-color: #b91c1c;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-    }
-
-    .btn-pill-outline {
-      width: 100%;
-      background-color: transparent;
-      border: 1.5px solid #cbd5e1;
-      color: #64748b;
-      border-radius: 9999px;
-      padding: 0.75rem;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover:not(:disabled) {
-        background-color: #f8fafc;
-        border-color: #94a3b8;
-        color: #334155;
-      }
-    }
   }
 }
 

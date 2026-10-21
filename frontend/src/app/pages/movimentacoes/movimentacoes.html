@@ -32,7 +32,7 @@
     <app-summary-card 
       title="SALDO NO PERÍODO" 
       [value]="formatarMoeda(resumo().saldo)" 
-      icon="/icons/ic-saldo.svg" 
+      [icon]="resumo().saldo >= 0 ? '/icons/ic-saldo.svg' : '/icons/ic-saldo-negativo.svg'" 
       subtitle="Entradas menos saídas" 
       [highlight]="true" 
       [iconBgClass]="resumo().saldo >= 0 ? 'bg-green-light' : 'bg-red-light'">
@@ -59,7 +59,7 @@
     <app-summary-card 
       title="TOTAL DE REGISTROS" 
       [value]="resumo().total_movimentacoes.toString()" 
-      icon="/icons/ic-movimentacoes.svg" 
+      icon="/icons/ic-registros.svg" 
       subtitle="Movimentações listadas"
       [highlight]="true" 
       iconBgClass="bg-green-light">
@@ -721,21 +721,21 @@
           <strong>{{ formatarMoeda(movDel.valor) }}</strong>? Esta ação não pode ser desfeita.
         </p>
 
-        <div class="modal-stack-actions">
+        <div class="confirm-actions-row">
           <button 
             type="button" 
-            class="btn-pill-danger-solid" 
-            (click)="confirmarExclusao()" 
+            class="btn-pill-primary" 
+            (click)="fecharModalExclusao()" 
             [disabled]="excluindo()">
-            {{ excluindo() ? 'Excluindo...' : 'Sim, excluir movimentação' }}
+            Cancelar
           </button>
           
           <button 
             type="button" 
-            class="btn-pill-outline" 
-            (click)="fecharModalExclusao()" 
+            class="btn-pill-danger" 
+            (click)="confirmarExclusao()" 
             [disabled]="excluindo()">
-            Cancelar
+            {{ excluindo() ? 'Excluindo...' : 'Excluir' }}
           </button>
         </div>
 

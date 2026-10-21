@@ -31,20 +31,23 @@
 }
 
 .icon-wrapper {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 
   img {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
+    display: block;
   }
 
   &.bg-green-light { background-color: #dcfce7; }
   &.bg-red-light { background-color: #fee2e2; }
+  &.bg-blue-light { background-color: #e0f2fe; }
 }
 
 .card-title {

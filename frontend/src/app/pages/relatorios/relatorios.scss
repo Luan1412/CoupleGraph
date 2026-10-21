@@ -31,54 +31,131 @@
 .periodo-card {
   background-color: var(--cg-branco-cards);
   border: 1.5px solid var(--cg-verde-principal);
-  border-radius: 12px;
-  padding: 1.75rem 2.2rem;
-  max-width: 460px;
+  border-radius: 16px;
+  padding: 1.5rem 1.8rem;
+  max-width: 660px;
   width: 100%;
-  margin: 0 auto 0.5rem;
+  margin: 0 auto 1.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 
-  .periodo-title {
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: var(--cg-texto-escuro-logo);
-    margin: 0 0 1.25rem 0;
-  }
-
-  .periodo-controls {
+  .periodo-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
   }
 
-  .select-wrapper {
-    position: relative;
-    flex: 1;
+  .periodo-title-wrap {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+    color: var(--cg-texto-escuro-logo);
+
+    .calendar-icon {
+      color: var(--cg-verde-principal);
+    }
+
+    .periodo-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin: 0;
+    }
   }
 
-  .select-periodo {
-    width: 100%;
-    background: transparent;
-    border: none;
-    font-size: 1.2rem;
+  .periodo-presets {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+
+    .preset-pill {
+      background-color: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 9999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #e2e8f0;
+        color: #334155;
+      }
+
+      &.active {
+        background-color: #dcfce7;
+        border-color: #16a34a;
+        color: #15803d;
+      }
+    }
+  }
+
+  .periodo-date-range {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+
+    @media (max-width: 580px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  .date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 140px;
+
+    .date-label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+  }
+
+  .date-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .input-date-pill {
+      width: 100%;
+      background-color: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 9999px;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--cg-texto-escuro-logo);
+      outline: none;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:focus {
+        border-color: var(--cg-verde-principal);
+        box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+      }
+    }
+  }
+
+  .date-sep-arrow {
+    font-size: 1.1rem;
     font-weight: 800;
-    color: var(--cg-texto-escuro-logo);
-    appearance: none;
-    cursor: pointer;
-    padding-right: 1.5rem;
-    outline: none;
-    font-family: inherit;
-  }
+    color: #94a3b8;
+    padding-bottom: 0.7rem;
 
-  .select-arrow {
-    position: absolute;
-    right: 0.2rem;
-    pointer-events: none;
-    font-size: 0.75rem;
-    color: var(--cg-texto-escuro-logo);
+    @media (max-width: 580px) {
+      display: none;
+    }
   }
 
   .btn-filtrar {
@@ -86,17 +163,51 @@
     color: #ffffff;
     border: none;
     border-radius: 9999px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    padding: 0.55rem 2.2rem;
+    padding: 0.65rem 1.6rem;
+    font-size: 0.92rem;
+    font-weight: 800;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+    height: 42px;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background-color: #0f3256;
       transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(10, 37, 64, 0.2);
     }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .periodo-erro-box {
+    margin-top: 0.85rem;
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 9999px;
+    padding: 0.5rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  .periodo-feedback-tag {
+    margin-top: 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
   }
 }
 

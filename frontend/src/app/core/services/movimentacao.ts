@@ -39,6 +39,8 @@ export interface MovimentacaoFiltros {
   busca?: string;
   mes?: number;
   ano?: number;
+  data_inicio?: string;
+  data_fim?: string;
 }
 
 @Injectable({
@@ -70,6 +72,12 @@ export class MovimentacaoService {
       if (filtros.ano) {
         params = params.set('ano', filtros.ano.toString());
       }
+      if (filtros.data_inicio) {
+        params = params.set('data_inicio', filtros.data_inicio);
+      }
+      if (filtros.data_fim) {
+        params = params.set('data_fim', filtros.data_fim);
+      }
     }
 
     return this.http.get<MovimentacaoItem[]>(`${this.apiUrl}/`, { params });
@@ -99,6 +107,12 @@ export class MovimentacaoService {
       }
       if (filtros.ano) {
         params = params.set('ano', filtros.ano.toString());
+      }
+      if (filtros.data_inicio) {
+        params = params.set('data_inicio', filtros.data_inicio);
+      }
+      if (filtros.data_fim) {
+        params = params.set('data_fim', filtros.data_fim);
       }
     }
 

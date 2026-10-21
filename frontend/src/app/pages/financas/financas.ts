@@ -1,11 +1,11 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, inject, OnInit, ChangeDetectorRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SummaryCard } from '../../shared/components/summary-card/summary-card';
 import { EspacoService, EspacoUsuarioModel } from '../../core/services/espaco';
-
 import { CategoriaService, CategoriaItem } from '../../core/services/categoria';
+import { MovimentacaoService, MovimentacaoItem } from '../../core/services/movimentacao';
 
 export interface BalancoEspaco {
   id: number;
@@ -26,29 +26,28 @@ export interface BalancoEspaco {
 export class Financas implements OnInit {
   private espacoService = inject(EspacoService);
   private categoriaService = inject(CategoriaService);
+  private movimentacaoService = inject(MovimentacaoService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
   // Filtros
   espacoSelecionadoId = signal<string>('todos');
-  periodoSelecionado = signal<string>('09-2026');
-
-  opcoesPeriodo = [
-    { label: 'Setembro 2026', value: '09-2026' },
-    { label: 'Outubro 2026', value: '10-2026' },
-    { label: 'Novembro 2026', value: '11-2026' },
-    { label: 'Agosto 2026', value: '08-2026' },
-    { label: 'Julho 2026', value: '07-2026' }
-  ];
+  presetAtivo = signal<string>('mes_atual');
+  dataInicio = signal<string>('2026-10-01');
+  dataFim = signal<string>('2026-10-31');
+  periodoAplicadoInicio = signal<string>('2026-10-01');
+  periodoAplicadoFim = signal<string>('2026-10-31');
+  erroData = signal<string>('');
+  carregandoFiltro = signal<boolean>(false);
 
   listaEspacos = signal<EspacoUsuarioModel[]>([]);
   carregando = signal<boolean>(true);
 
   // Métricas do Topo
-  saldoDisponivel = signal<number>(3250);
-  totalReceitas = signal<number>(5000);
-  totalDespesas = signal<number>(1750);
-  taxaEconomia = signal<number>(65); // 65% poupado
+  saldoDisponivel = signal<number>(0);
+  totalReceitas = signal<number>(0);
+  totalDespesas = signal<number>(0);
+  taxaEconomia = signal<number>(0);
 
   // Orçamentos por Categoria (Vindo reativamente do CategoriaService compartilhado)
   orcamentos = computed(() => this.categoriaService.categorias());
@@ -65,6 +64,14 @@ export class Financas implements OnInit {
 
   // Balanço por Espaço
   balancoEspacos = signal<BalancoEspaco[]>([]);
+
+  // Mensagem calculada dinamicamente a partir dos Signals aplicados
+  mensagemPeriodo = computed(() => {
+    const inicio = this.periodoAplicadoInicio();
+    const fim = this.periodoAplicadoFim();
+    if (!inicio || !fim) return '';
+    return `Exibindo dados de ${this.formatarDataBr(inicio)} até ${this.formatarDataBr(fim)}`;
+  });
 
   // Insight Inteligente e Universal (indivíduo, casal, grupo de amigos)
   insightTitulo = computed(() => {
@@ -106,61 +113,188 @@ export class Financas implements OnInit {
     this.espacoService.listarMeusEspacos().subscribe({
       next: (dados) => {
         this.listaEspacos.set(dados || []);
-        
-        if (dados && dados.length > 0) {
-          const balancos: BalancoEspaco[] = dados.map(item => {
-            const numMembros = item.espaco.total_membros || 1;
-            const tipo = numMembros > 1 ? `Compartilhado · ${numMembros} pessoas` : 'Espaço pessoal';
-            const saldo = item.espaco.saldo ?? 0;
-            const despesas = item.espaco.despesas ?? 0;
-            const receitas = saldo + despesas;
-
-            return {
-              id: item.espaco.id,
-              nome: item.espaco.nome,
-              tipo,
-              saldo,
-              receitas,
-              despesas
-            };
-          });
-          this.balancoEspacos.set(balancos);
-        } else {
-          this.balancoEspacos.set([]);
-        }
-
-        this.carregando.set(false);
-        this.cdr.detectChanges();
+        this.aplicarPreset('mes_atual');
       },
       error: (err) => {
         console.error('Erro ao carregar espaços em finanças:', err);
         this.listaEspacos.set([]);
-        this.balancoEspacos.set([]);
+        this.aplicarPreset('mes_atual');
+      }
+    });
+  }
+
+  aplicarPreset(preset: 'mes_atual' | 'ultimos_7' | 'ultimos_30'): void {
+    this.presetAtivo.set(preset);
+    this.erroData.set('');
+    const hoje = new Date();
+    const refDate = hoje.getFullYear() >= 2026 ? hoje : new Date('2026-10-21');
+
+    let inicio = '';
+    let fim = '';
+
+    if (preset === 'mes_atual') {
+      const ano = refDate.getFullYear();
+      const mes = refDate.getMonth();
+      const primeiroDia = new Date(ano, mes, 1);
+      const ultimoDia = new Date(ano, mes + 1, 0);
+
+      inicio = this.formatarDataIso(primeiroDia);
+      fim = this.formatarDataIso(ultimoDia);
+    } else if (preset === 'ultimos_7') {
+      const seteDiasAtras = new Date(refDate.getTime() - 6 * 24 * 60 * 60 * 1000);
+      inicio = this.formatarDataIso(seteDiasAtras);
+      fim = this.formatarDataIso(refDate);
+    } else if (preset === 'ultimos_30') {
+      const trintaDiasAtras = new Date(refDate.getTime() - 29 * 24 * 60 * 60 * 1000);
+      inicio = this.formatarDataIso(trintaDiasAtras);
+      fim = this.formatarDataIso(refDate);
+    }
+
+    this.dataInicio.set(inicio);
+    this.dataFim.set(fim);
+    this.periodoAplicadoInicio.set(inicio);
+    this.periodoAplicadoFim.set(fim);
+    this.aplicarFiltros();
+  }
+
+  onDataInicioChange(novoValor: string): void {
+    this.dataInicio.set(novoValor);
+    this.presetAtivo.set('personalizado');
+    this.validarDatasEmTempoReal();
+  }
+
+  onDataFimChange(novoValor: string): void {
+    this.dataFim.set(novoValor);
+    this.presetAtivo.set('personalizado');
+    this.validarDatasEmTempoReal();
+  }
+
+  private validarDatasEmTempoReal(): void {
+    const inicio = this.dataInicio();
+    const fim = this.dataFim();
+
+    if (!inicio || !fim) {
+      this.erroData.set('Por favor, informe a data inicial e final.');
+      return;
+    }
+
+    if (inicio > fim) {
+      this.erroData.set(`A data inicial (${this.formatarDataBr(inicio)}) é maior que a data final (${this.formatarDataBr(fim)}).`);
+    } else {
+      this.erroData.set('');
+    }
+  }
+
+  aplicarFiltros(): void {
+    const inicio = this.dataInicio();
+    const fim = this.dataFim();
+
+    if (!inicio || !fim) {
+      this.erroData.set('Por favor, informe a data inicial e final.');
+      return;
+    }
+
+    if (inicio > fim) {
+      this.erroData.set(`A data inicial (${this.formatarDataBr(inicio)}) não pode ser posterior à data final (${this.formatarDataBr(fim)}).`);
+      return;
+    }
+
+    this.erroData.set('');
+    this.periodoAplicadoInicio.set(inicio);
+    this.periodoAplicadoFim.set(fim);
+    this.carregandoFiltro.set(true);
+
+    const espacoId = this.espacoSelecionadoId();
+    const espacoParam = espacoId === 'todos' ? undefined : parseInt(espacoId, 10);
+
+    const filtros = {
+      espaco_id: espacoParam,
+      data_inicio: inicio,
+      data_fim: fim
+    };
+
+    this.movimentacaoService.listar(filtros).subscribe({
+      next: (itens) => {
+        this.processarMovimentacoes(itens || []);
+        this.carregandoFiltro.set(false);
+        this.carregando.set(false);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erro ao listar movimentações em finanças:', err);
+        this.processarMovimentacoes([]);
+        this.carregandoFiltro.set(false);
         this.carregando.set(false);
         this.cdr.detectChanges();
       }
     });
   }
 
-  aplicarFiltros(): void {
-    const espacoId = this.espacoSelecionadoId();
-    if (espacoId === 'todos') {
-      this.saldoDisponivel.set(3250);
-      this.totalReceitas.set(5000);
-      this.totalDespesas.set(1750);
-      this.taxaEconomia.set(65);
-    } else {
-      const idNum = parseInt(espacoId, 10);
-      const esp = this.balancoEspacos().find(b => b.id === idNum);
-      if (esp) {
-        this.saldoDisponivel.set(esp.saldo);
-        this.totalReceitas.set(esp.receitas);
-        this.totalDespesas.set(esp.despesas);
-        const taxa = esp.receitas > 0 ? Math.round(((esp.receitas - esp.despesas) / esp.receitas) * 100) : 0;
-        this.taxaEconomia.set(Math.max(0, taxa));
-      }
+  private processarMovimentacoes(itens: MovimentacaoItem[]): void {
+    const rec = itens
+      .filter(m => m.tipo === 'receita')
+      .reduce((acc, m) => acc + (m.valor || 0), 0);
+
+    const desp = itens
+      .filter(m => m.tipo === 'despesa')
+      .reduce((acc, m) => acc + (m.valor || 0), 0);
+
+    const saldo = rec - desp;
+    const taxa = rec > 0 ? Math.round(((rec - desp) / rec) * 100) : 0;
+
+    this.totalReceitas.set(rec);
+    this.totalDespesas.set(desp);
+    this.saldoDisponivel.set(saldo);
+    this.taxaEconomia.set(Math.max(0, taxa));
+
+    // Atualiza os gastos reais de cada categoria para sincronizar com os orçamentos
+    const gastosPorCat = new Map<string, number>();
+    itens.filter(m => m.tipo === 'despesa').forEach(m => {
+      const cat = (m.categoria || 'Outros').toLowerCase().trim();
+      gastosPorCat.set(cat, (gastosPorCat.get(cat) || 0) + (m.valor || 0));
+    });
+
+    const categorias = this.categoriaService.categorias();
+    categorias.forEach(cat => {
+      const gasto = gastosPorCat.get(cat.nome.toLowerCase().trim()) || 0;
+      this.categoriaService.atualizarCategoria(cat.id ?? cat.nome, { gasto });
+    });
+
+    // Atualiza o balanço por espaço
+    this.atualizarBalancoEspacos(itens);
+  }
+
+  private atualizarBalancoEspacos(itens: MovimentacaoItem[]): void {
+    const espacos = this.listaEspacos();
+    if (!espacos || espacos.length === 0) {
+      this.balancoEspacos.set([]);
+      return;
     }
-    this.cdr.detectChanges();
+
+    const balancos: BalancoEspaco[] = espacos.map(item => {
+      const numMembros = item.espaco.total_membros || 1;
+      const tipo = numMembros > 1 ? `Compartilhado · ${numMembros} pessoas` : 'Espaço pessoal';
+
+      const movsDoEspaco = itens.filter(m => m.espaco_id === item.espaco.id);
+      const rec = movsDoEspaco
+        .filter(m => m.tipo === 'receita')
+        .reduce((acc, m) => acc + (m.valor || 0), 0);
+      const desp = movsDoEspaco
+        .filter(m => m.tipo === 'despesa')
+        .reduce((acc, m) => acc + (m.valor || 0), 0);
+      const saldo = rec - desp;
+
+      return {
+        id: item.espaco.id,
+        nome: item.espaco.nome,
+        tipo,
+        saldo,
+        receitas: rec,
+        despesas: desp
+      };
+    });
+
+    this.balancoEspacos.set(balancos);
   }
 
   calcularPorcentagem(gasto: number, limite: number): number {
@@ -175,6 +309,22 @@ export class Financas implements OnInit {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(valor || 0);
+  }
+
+  private formatarDataIso(data: Date): string {
+    const ano = data.getFullYear();
+    const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+    const dia = data.getDate().toString().padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  formatarDataBr(iso: string): string {
+    if (!iso) return '';
+    const partes = iso.split('-');
+    if (partes.length === 3) {
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+    return iso;
   }
 
   // Abertura e Gestão do Modal de Orçamentos
