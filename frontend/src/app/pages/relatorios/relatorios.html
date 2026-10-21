@@ -11,7 +11,7 @@
     <h3 class="periodo-title">Período</h3>
     <div class="periodo-controls">
       <div class="select-wrapper">
-        <select class="select-periodo" [ngModel]="periodoSelecionado()" (ngModelChange)="periodoSelecionado.set($event)">
+        <select class="select-periodo" [ngModel]="periodoSelecionado()" (ngModelChange)="onPeriodoChange($event)">
           @for (opcao of opcoesPeriodo; track opcao.value) {
             <option [value]="opcao.value">{{ opcao.label }}</option>
           }
@@ -31,7 +31,7 @@
       icon="/icons/ic-saldo.svg" 
       [subtitle]="saldoSubtitulo()" 
       [highlight]="true" 
-      iconBgClass="bg-green-light">
+      [iconBgClass]="saldoNegativo() ? 'bg-red-light' : 'bg-green-light'">
     </app-summary-card>
 
     <app-summary-card 
@@ -63,7 +63,13 @@
 
     <!-- Gráfico Receitas x Despesas -->
     <section class="chart-card">
-      <h3 class="chart-title">Receitas x Despesas</h3>
+      <div class="chart-header-row">
+        <h3 class="chart-title">Receitas x Despesas</h3>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot dot-receita"></span> Receitas</span>
+          <span class="legend-item"><span class="legend-dot dot-despesa"></span> Despesas</span>
+        </div>
+      </div>
 
       <div class="chart-body">
         <div class="bars-container">

@@ -136,12 +136,49 @@
   flex-direction: column;
   height: 100%;
 
-  .chart-title {
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: var(--cg-texto-escuro-logo);
-    margin: 0 0 1.5rem 0;
+  .chart-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--cg-texto-escuro-logo);
+      margin: 0;
+    }
+  }
+
+  .chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+
+      &.dot-receita {
+        background-color: #16a34a;
+      }
+
+      &.dot-despesa {
+        background-color: #ef4444;
+      }
+    }
   }
 
   .chart-body {
