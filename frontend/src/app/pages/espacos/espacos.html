@@ -449,17 +449,20 @@
     </div>
   }
 
-  <!-- 5. MODAL GERENCIAR ESPAÇO -->
+  <!-- 5. DRAWER LATERAL: GERENCIAR ESPAÇO -->
   @if (modalGerenciarAberto() && espacoSelecionado) {
-    <div class="modal-backdrop" (click)="fecharModalGerenciar()">
-      <div class="modal-dialog modal-couplegraph" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop drawer-backdrop" (click)="fecharModalGerenciar()">
+      <aside class="create-space-drawer" (click)="$event.stopPropagation()">
 
-        <div class="modal-top-bar">
-          <h2 class="modal-main-title">Gerenciar espaço</h2>
-          <button type="button" class="btn-close-icon" (click)="fecharModalGerenciar()" aria-label="Fechar">✕</button>
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Gerenciar espaço</h2>
+            <p class="drawer-subtitle">Personalize o nome, ícone, cor e participantes deste espaço.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalGerenciar()" aria-label="Fechar">✕</button>
         </div>
 
-        <div class="space-details-section">
+        <div class="drawer-body">
 
           <!-- Nome do espaço -->
           @if (!editandoNome()) {
@@ -593,39 +596,43 @@
             </div>
           </div>
 
+          @if (modoConvidar()) {
+            <div class="invite-box">
+              <label class="form-label" for="conviteEmail">E-mail ou nome da pessoa a convidar</label>
+              <input
+                id="conviteEmail"
+                type="email"
+                placeholder="exemplo@email.com"
+                class="input-pill"
+                [(ngModel)]="emailConvite"
+                (keyup.enter)="enviarConvite()"
+              />
+              <div class="invite-actions">
+                <button type="button" class="btn-pill-primary" (click)="enviarConvite()">Adicionar participante</button>
+                <button type="button" class="btn-pill-secondary" (click)="cancelarConvidar()">Voltar</button>
+              </div>
+            </div>
+          }
+
         </div>
 
-        @if (modoConvidar()) {
-          <div class="invite-box">
-            <label class="form-label" for="conviteEmail">E-mail ou nome da pessoa a convidar</label>
-            <input
-              id="conviteEmail"
-              type="email"
-              placeholder="exemplo@email.com"
-              class="input-pill"
-              [(ngModel)]="emailConvite"
-              (keyup.enter)="enviarConvite()"
-            />
-            <div class="invite-actions">
-              <button type="button" class="btn-pill-primary" (click)="enviarConvite()">Adicionar participante</button>
-              <button type="button" class="btn-pill-secondary" (click)="cancelarConvidar()">Voltar</button>
+        <div class="drawer-footer">
+          @if (!modoConvidar()) {
+            <div class="modal-stack-actions">
+              <button type="button" class="btn-pill-primary" (click)="abrirConvidarPessoa()">
+                + Convidar participante
+              </button>
+              <button type="button" class="btn-pill-danger" (click)="solicitarExclusaoEspaco()">
+                Excluir espaço
+              </button>
+              <button type="button" class="btn-pill-secondary" (click)="fecharModalGerenciar()">
+                Fechar
+              </button>
             </div>
-          </div>
-        } @else {
-          <div class="modal-stack-actions">
-            <button type="button" class="btn-pill-primary" (click)="abrirConvidarPessoa()">
-              + Convidar participante
-            </button>
-            <button type="button" class="btn-pill-danger" (click)="solicitarExclusaoEspaco()">
-              Excluir espaço
-            </button>
-            <button type="button" class="btn-pill-secondary" (click)="fecharModalGerenciar()">
-              Fechar
-            </button>
-          </div>
-        }
+          }
+        </div>
 
-      </div>
+      </aside>
     </div>
   }
 

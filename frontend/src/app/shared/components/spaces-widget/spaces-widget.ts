@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../../core/services/theme';
+import { EspacoService } from '../../../core/services/espaco';
 
 @Component({
   selector: 'app-spaces-widget',
@@ -12,6 +13,7 @@ import { ThemeService } from '../../../core/services/theme';
 })
 export class SpacesWidget {
   private router = inject(Router);
+  private espacoService = inject(EspacoService);
   themeService = inject(ThemeService);
 
   @Input() espacos: any[] = [];
@@ -33,10 +35,13 @@ export class SpacesWidget {
   }
 
   onAcessar(espaco: any): void {
+    if (espaco?.id) {
+      this.espacoService.definirEspacoAtivoId(espaco.id);
+    }
     if (this.acessar.observed) {
       this.acessar.emit(espaco);
     } else {
-      this.router.navigate(['/espacos']);
+      this.router.navigate(['/movimentacoes'], { queryParams: espaco?.id ? { espaco: espaco.id } : undefined });
     }
   }
 }

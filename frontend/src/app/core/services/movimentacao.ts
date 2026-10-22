@@ -54,8 +54,8 @@ export class MovimentacaoService {
     let params = new HttpParams();
 
     if (filtros) {
-      if (filtros.espaco_id && filtros.espaco_id !== 'todos') {
-        params = params.set('espaco_id', filtros.espaco_id.toString());
+      if (filtros.espaco_id && filtros.espaco_id !== 'todos' && Number(filtros.espaco_id) > 0) {
+        params = params.set('espaco_id', String(Number(filtros.espaco_id)));
       }
       if (filtros.tipo) {
         params = params.set('tipo', filtros.tipo);

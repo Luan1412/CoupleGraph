@@ -45,10 +45,10 @@
             id="selectEspaco" 
             class="select-pill" 
             [ngModel]="espacoSelecionadoId()" 
-            (ngModelChange)="espacoSelecionadoId.set($event)">
+            (ngModelChange)="onEspacoChange($event)">
             <option value="todos">Todos os espaços</option>
             @for (esp of listaEspacos(); track esp.espaco.id) {
-              <option [value]="esp.espaco.id">{{ esp.espaco.nome }}</option>
+              <option [value]="esp.espaco.id.toString()">{{ esp.espaco.nome }}</option>
             }
           </select>
           <span class="select-arrow">▼</span>
@@ -279,79 +279,116 @@
     </div>
   </section>
 
-  <!-- Modal Limites de Orçamento -->
+  <!-- Drawer Lateral: Limites de Orçamento -->
   @if (modalOrcamentoAberto()) {
-    <div class="modal-backdrop" (click)="fecharModalOrcamento()">
-      <div class="modal-dialog modal-couplegraph modal-orcamento" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop drawer-backdrop" (click)="fecharModalOrcamento()">
+      <aside class="side-drawer" (click)="$event.stopPropagation()">
         
-        <div class="modal-top-bar">
-          <img src="/images/COUPLEGRAPH.svg" alt="CoupleGraph" class="modal-logo">
-          <button class="btn-close-icon" (click)="fecharModalOrcamento()" aria-label="Fechar">✕</button>
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Limites de orçamento</h2>
+            <p class="drawer-subtitle">Defina o teto mensal de gastos ou adicione novas categorias.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalOrcamento()" aria-label="Fechar">✕</button>
         </div>
 
-        <h2 class="modal-main-title text-center">Limites de Orçamento</h2>
-        <p class="modal-subtitle text-center">Defina o teto mensal de gastos ou adicione novas categorias.</p>
+        <div class="drawer-body">
 
-        <!-- Lista de Categorias com Edição de Limite -->
-        <div class="categories-edit-list">
-          @for (cat of categoriasEdicao(); track cat.id ?? cat.nome) {
-            <div class="category-edit-row">
-              <div class="cat-label-wrap">
-                <span class="cat-color-dot" [style.background-color]="cat.cor"></span>
-                <span class="cat-name-text">{{ cat.nome }}</span>
+          <!-- Seção: Teto Geral de Orçamento -->
+          <div class="new-category-box teto-geral-box">
+            <div class="teto-geral-header">
+              <div>
+                <h4 class="new-cat-title">Teto geral de orçamento mensal</h4>
+                <p class="teto-geral-desc">
+                  Defina um valor fixo geral ou deixe em branco para usar a soma das categorias ({{ formatarMoeda(somaCategoriasEdicao()) }}).
+                </p>
               </div>
+              @if (tetoGeralEdicao !== null && tetoGeralEdicao > 0) {
+                <button type="button" class="btn-auto-soma" (click)="usarSomaCategoriasNoTeto()">
+                  Usar soma automática
+                </button>
+              }
+            </div>
 
-              <div class="cat-input-wrap">
+            <div class="new-cat-num-wrap">
+              <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+              <input
+                type="number"
+                min="0"
+                class="input-pill new-cat-limit"
+                [(ngModel)]="tetoGeralEdicao"
+                [placeholder]="'Automático (' + formatarMoeda(somaCategoriasEdicao()) + ')'"
+              />
+            </div>
+          </div>
+
+          <!-- Seção Adicionar Nova Categoria -->
+          <div class="new-category-box">
+            <h4 class="new-cat-title">+ Adicionar categoria</h4>
+            <div class="new-cat-inputs">
+              <input 
+                type="text" 
+                class="input-pill new-cat-name" 
+                [(ngModel)]="novaCategoriaNome"
+                placeholder="Nome (ex: Saúde, Pets...)"
+                (keyup.enter)="adicionarCategoriaNaEdicao()"
+              />
+              <div class="new-cat-num-wrap">
                 <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
                 <input 
                   type="number" 
                   min="0"
-                  class="input-pill-num"
-                  [(ngModel)]="cat.limite"
-                  placeholder="0"
+                  class="input-pill new-cat-limit" 
+                  [(ngModel)]="novaCategoriaLimite"
+                  placeholder="Limite (0,00)"
+                  (keyup.enter)="adicionarCategoriaNaEdicao()"
                 />
-                <button class="btn-remove-cat" (click)="removerCategoriaNaEdicao(cat.id ?? cat.nome)" title="Excluir categoria">✕</button>
               </div>
+              <button type="button" class="btn-add-cat" (click)="adicionarCategoriaNaEdicao()">
+                + Adicionar categoria
+              </button>
             </div>
-          }
-        </div>
-
-        <!-- Seção Adicionar Nova Categoria -->
-        <div class="new-category-box">
-          <h4 class="new-cat-title">+ Adicionar categoria</h4>
-          <div class="new-cat-inputs">
-            <input 
-              type="text" 
-              class="input-pill new-cat-name" 
-              [(ngModel)]="novaCategoriaNome"
-              placeholder="Nome (ex: Saúde, Pets...)"
-              (keyup.enter)="adicionarCategoriaNaEdicao()"
-            />
-            <div class="new-cat-num-wrap">
-              <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
-              <input 
-                type="number" 
-                min="0"
-                class="input-pill new-cat-limit" 
-                [(ngModel)]="novaCategoriaLimite"
-                placeholder="0"
-                (keyup.enter)="adicionarCategoriaNaEdicao()"
-              />
-            </div>
-            <button class="btn-pill-primary btn-add-cat" (click)="adicionarCategoriaNaEdicao()">Adicionar</button>
+            @if (erroModalOrcamento()) {
+              <span class="input-error-msg">{{ erroModalOrcamento() }}</span>
+            }
           </div>
-          @if (erroModalOrcamento()) {
-            <span class="input-error-msg">{{ erroModalOrcamento() }}</span>
-          }
+
+          <!-- Lista de Categorias com Edição de Limite -->
+          <div class="form-group">
+            <span class="form-label">Categorias e limites mensais</span>
+            <div class="categories-edit-list">
+              @for (cat of categoriasEdicao(); track cat.id ?? cat.nome) {
+                <div class="category-edit-row">
+                  <div class="cat-label-wrap">
+                    <span class="cat-color-dot" [style.background-color]="cat.cor"></span>
+                    <span class="cat-name-text">{{ cat.nome }}</span>
+                  </div>
+
+                  <div class="cat-input-wrap">
+                    <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+                    <input 
+                      type="number" 
+                      min="0"
+                      class="input-pill-num"
+                      [(ngModel)]="cat.limite"
+                      placeholder="0"
+                    />
+                    <button type="button" class="btn-remove-cat" (click)="removerCategoriaNaEdicao(cat.id ?? cat.nome)" title="Excluir categoria">✕</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
         </div>
 
-        <!-- Botões de Ação Empilhados -->
-        <div class="modal-stack-actions">
-          <button class="btn-pill-primary" (click)="salvarModalOrcamento()">Salvar orçamentos</button>
-          <button class="btn-pill-outline" (click)="fecharModalOrcamento()">Cancelar</button>
+        <!-- Rodapé do Drawer -->
+        <div class="drawer-footer">
+          <button type="button" class="btn-drawer-submit" (click)="salvarModalOrcamento()">Salvar orçamentos</button>
+          <button type="button" class="btn-drawer-cancel" (click)="fecharModalOrcamento()">Cancelar</button>
         </div>
 
-      </div>
+      </aside>
     </div>
   }
 

@@ -1,7 +1,7 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SummaryCard } from '../../shared/components/summary-card/summary-card';
 import { MovimentacaoService, MovimentacaoItem, MovimentacaoResumo } from '../../core/services/movimentacao';
 import { EspacoService, EspacoUsuarioModel } from '../../core/services/espaco';
@@ -21,7 +21,10 @@ export class Movimentacoes implements OnInit {
   private categoriaService = inject(CategoriaService);
   themeService = inject(ThemeService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
+  private inicializado = false;
+  private ultimoTickProcessado = -1;
 
   // Estados de dados
   carregando = signal<boolean>(true);
@@ -39,7 +42,9 @@ export class Movimentacoes implements OnInit {
 
   // Filtros
   tipoFiltro = signal<'todos' | 'receita' | 'despesa'>('todos');
-  espacoFiltro = signal<string>('todos');
+  espacoFiltro = signal<string>(
+    this.espacoService.espacoAtivoId() ? String(this.espacoService.espacoAtivoId()) : 'todos'
+  );
   categoriaFiltro = signal<string>('todas');
   buscaTexto = signal<string>('');
   periodoFiltro = signal<string>('todos');
@@ -213,17 +218,84 @@ export class Movimentacoes implements OnInit {
     }, 3800);
   }
 
+  constructor() {
+    effect(() => {
+      const idAtivo = this.espacoService.espacoAtivoId();
+      const tick = this.espacoService.selecaoEspacoTick();
+      if (!this.inicializado) {
+        this.ultimoTickProcessado = tick;
+        return;
+      }
+      if (tick === this.ultimoTickProcessado) {
+        return;
+      }
+      this.ultimoTickProcessado = tick;
+
+      untracked(() => {
+        const novoFiltro = idAtivo ? String(idAtivo) : 'todos';
+        if (this.espacoFiltro() !== novoFiltro) {
+          this.espacoFiltro.set(novoFiltro);
+          if (idAtivo) {
+            this.formEspacoId = idAtivo;
+          }
+          this.carregarMovimentacoes();
+        }
+      });
+    });
+  }
+
   ngOnInit(): void {
+    const espacoQuery = this.route.snapshot.queryParamMap.get('espaco');
+    if (espacoQuery === 'todos') {
+      this.espacoFiltro.set('todos');
+    } else if (espacoQuery) {
+      const idNum = parseInt(espacoQuery, 10);
+      if (!isNaN(idNum) && idNum > 0) {
+        this.espacoService.definirEspacoAtivoId(idNum);
+        this.espacoFiltro.set(String(idNum));
+        this.formEspacoId = idNum;
+      }
+    } else {
+      const idAtivo = this.espacoService.espacoAtivoId();
+      if (idAtivo) {
+        this.espacoFiltro.set(String(idAtivo));
+        this.formEspacoId = idAtivo;
+      }
+    }
+
+    this.ultimoTickProcessado = this.espacoService.selecaoEspacoTick();
+    this.inicializado = true;
     this.carregarEspacos();
     this.carregarMovimentacoes();
+
+    if (this.route.snapshot.queryParamMap.get('nova') === '1') {
+      this.abrirModal('despesa');
+    }
   }
 
   carregarEspacos(): void {
     this.espacoService.listarMeusEspacos().subscribe({
       next: (dados) => {
-        this.listaEspacos.set(dados || []);
-        if (dados && dados.length > 0 && !this.formEspacoId) {
-          this.formEspacoId = dados[0].espaco.id;
+        const lista = dados || [];
+        this.listaEspacos.set(lista);
+        if (lista.length > 0) {
+          const filtroAtual = this.espacoFiltro();
+          if (filtroAtual !== 'todos') {
+            const idFiltro = parseInt(filtroAtual, 10);
+            const existe = lista.some(e => e.espaco.id === idFiltro);
+            if (!existe) {
+              const primeiroId = lista[0].espaco.id;
+              this.ultimoTickProcessado = this.espacoService.selecaoEspacoTick() + 1;
+              this.espacoService.definirEspacoAtivoId(primeiroId);
+              this.espacoFiltro.set(String(primeiroId));
+              this.formEspacoId = primeiroId;
+              this.carregarMovimentacoes();
+            } else {
+              this.formEspacoId = idFiltro;
+            }
+          } else if (!this.formEspacoId) {
+            this.formEspacoId = lista[0].espaco.id;
+          }
         }
         this.cdr.detectChanges();
       },
@@ -231,7 +303,10 @@ export class Movimentacoes implements OnInit {
     });
   }
 
+  private requisicaoMovId = 0;
+
   carregarMovimentacoes(): void {
+    const reqId = ++this.requisicaoMovId;
     this.carregando.set(true);
 
     const periodoAtual = this.opcoesPeriodo.find(p => p.value === this.periodoFiltro());
@@ -241,9 +316,15 @@ export class Movimentacoes implements OnInit {
     const tipoAtual = this.tipoFiltro();
     const tipoParam: 'receita' | 'despesa' | undefined = tipoAtual === 'todos' ? undefined : tipoAtual;
 
+    const espFiltro = this.espacoFiltro();
+    const idEspNum = Number(espFiltro);
+    const espacoParam = (!espFiltro || espFiltro === 'todos' || isNaN(idEspNum) || idEspNum <= 0)
+      ? undefined
+      : idEspNum;
+
     const filtros = {
       tipo: tipoParam,
-      espaco_id: this.espacoFiltro() === 'todos' ? undefined : parseInt(this.espacoFiltro(), 10),
+      espaco_id: espacoParam,
       categoria: this.categoriaFiltro() === 'todas' ? undefined : this.categoriaFiltro(),
       busca: this.buscaTexto(),
       mes,
@@ -253,14 +334,15 @@ export class Movimentacoes implements OnInit {
     // Busca movimentações e resumo simultaneamente
     this.movimentacaoService.listar(filtros).subscribe({
       next: (itens) => {
+        if (reqId !== this.requisicaoMovId) return;
         this.movimentacoes.set(itens);
         this.calcularResumoLocal(itens);
         this.carregando.set(false);
         this.cdr.detectChanges();
       },
       error: (err) => {
+        if (reqId !== this.requisicaoMovId) return;
         console.error('Erro ao listar movimentações:', err);
-        // Fallback para mock elegante se a tabela estiver inicialmente sem registros
         this.movimentacoes.set([]);
         this.calcularResumoLocal([]);
         this.carregando.set(false);
@@ -291,6 +373,20 @@ export class Movimentacoes implements OnInit {
     this.carregarMovimentacoes();
   }
 
+  onEspacoFiltroChange(valor: string): void {
+    const strVal = String(valor);
+    this.espacoFiltro.set(strVal);
+    if (strVal !== 'todos') {
+      const idNum = parseInt(strVal, 10);
+      if (!isNaN(idNum) && idNum > 0) {
+        this.ultimoTickProcessado = this.espacoService.selecaoEspacoTick() + 1;
+        this.espacoService.definirEspacoAtivoId(idNum);
+        this.formEspacoId = idNum;
+      }
+    }
+    this.carregarMovimentacoes();
+  }
+
   onFiltroChange(): void {
     this.carregarMovimentacoes();
   }
@@ -315,9 +411,17 @@ export class Movimentacoes implements OnInit {
     this.termoBuscaCategoria.set('');
     this.dropdownCategoriaAberto.set(false);
 
-    // Espaço default
+    // Espaço default baseado no filtro atual ou espaço ativo
     const espacos = this.listaEspacos();
-    this.formEspacoId = espacos.length > 0 ? espacos[0].espaco.id : null;
+    const filtroAtual = this.espacoFiltro();
+    const idAtivo = this.espacoService.espacoAtivoId();
+    if (filtroAtual !== 'todos' && !isNaN(parseInt(filtroAtual, 10))) {
+      this.formEspacoId = parseInt(filtroAtual, 10);
+    } else if (idAtivo && espacos.some(e => e.espaco.id === idAtivo)) {
+      this.formEspacoId = idAtivo;
+    } else {
+      this.formEspacoId = espacos.length > 0 ? espacos[0].espaco.id : null;
+    }
 
     // Data de hoje no formato YYYY-MM-DD
     const hoje = new Date().toISOString().substring(0, 10);
@@ -562,7 +666,10 @@ export class Movimentacoes implements OnInit {
   }
 
   irParaFinancas(): void {
-    this.router.navigate(['/financas']);
+    const espId = this.espacoFiltro();
+    this.router.navigate(['/financas'], {
+      queryParams: espId !== 'todos' ? { espaco: espId } : undefined
+    });
   }
 
   irParaEspacos(): void {

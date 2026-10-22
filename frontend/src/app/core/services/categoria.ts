@@ -9,6 +9,7 @@ export interface CategoriaItem {
 }
 
 const STORAGE_KEY = 'cg_categorias_orcamento';
+const STORAGE_TETO_GERAL_KEY = 'cg_teto_geral_orcamento';
 
 const CATEGORIAS_PADRAO: CategoriaItem[] = [
   { id: '1', nome: 'Alimentação', limite: 1000, gasto: 650, cor: '#3b82f6' },
@@ -35,13 +36,24 @@ const PALETA_CORES = [
 })
 export class CategoriaService {
   private _categorias = signal<CategoriaItem[]>(this.carregarInicial());
+  private _tetoGeralManual = signal<number | null>(this.carregarTetoGeralInicial());
 
   // Signal público somente leitura para reatividade total
   readonly categorias = this._categorias.asReadonly();
+  readonly tetoGeralManual = this._tetoGeralManual.asReadonly();
 
-  // Total planejado de todas as categorias
-  readonly totalPlanejado = computed(() => {
+  // Soma dos limites individuais das categorias
+  readonly somaLimitesCategorias = computed(() => {
     return this._categorias().reduce((acc, cat) => acc + (cat.limite || 0), 0);
+  });
+
+  // Total planejado efetivo: usa o Teto Geral Manual se estiver definido (> 0), senão a soma das categorias
+  readonly totalPlanejado = computed(() => {
+    const manual = this._tetoGeralManual();
+    if (manual !== null && manual > 0) {
+      return manual;
+    }
+    return this.somaLimitesCategorias();
   });
 
   // Total gasto em todas as categorias
@@ -66,6 +78,23 @@ export class CategoriaService {
     return CATEGORIAS_PADRAO;
   }
 
+  private carregarTetoGeralInicial(): number | null {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const salvo = localStorage.getItem(STORAGE_TETO_GERAL_KEY);
+        if (salvo !== null && salvo !== '') {
+          const num = Number(salvo);
+          if (!isNaN(num) && num > 0) {
+            return num;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar teto geral do localStorage:', e);
+    }
+    return null;
+  }
+
   private persistir(lista: CategoriaItem[]): void {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -76,9 +105,28 @@ export class CategoriaService {
     }
   }
 
-  salvarTodas(lista: CategoriaItem[]): void {
+  definirTetoGeral(valor: number | null): void {
+    const valLimpo = valor !== null && !isNaN(Number(valor)) && Number(valor) > 0 ? Number(valor) : null;
+    this._tetoGeralManual.set(valLimpo);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        if (valLimpo !== null) {
+          localStorage.setItem(STORAGE_TETO_GERAL_KEY, String(valLimpo));
+        } else {
+          localStorage.removeItem(STORAGE_TETO_GERAL_KEY);
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao salvar teto geral no localStorage:', e);
+    }
+  }
+
+  salvarTodas(lista: CategoriaItem[], tetoGeral?: number | null): void {
     this._categorias.set([...lista]);
     this.persistir(lista);
+    if (tetoGeral !== undefined) {
+      this.definirTetoGeral(tetoGeral);
+    }
   }
 
   adicionarCategoria(nome: string, limite: number, gasto: number = 0): boolean {

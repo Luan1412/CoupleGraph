@@ -75,11 +75,19 @@ export class Sidebar implements OnInit {
 
     this.espacoService.listarMeusEspacos().subscribe({
       next: (dados) => {
+        const coresUsadas = new Set<string>();
         const mapeados: EspacoResumoSidebar[] = (dados || []).map((item, idx) => {
           const id = item.espaco.id;
           const nome = item.espaco.nome;
           const meta = metaMap[id] || {};
           const padrao = this.inferirVisualPorNome(nome, idx);
+
+          let corEspaco: string = meta.cor || padrao.cor;
+          if (!meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
+            const alternativa = this.coresPadrao.find(c => !coresUsadas.has(c.toUpperCase()));
+            corEspaco = alternativa || this.coresPadrao[idx % this.coresPadrao.length];
+          }
+          coresUsadas.add(corEspaco.toUpperCase());
 
           const extrasCount = Array.isArray(meta.participantesExtras) ? meta.participantesExtras.length : 0;
           const totalMembros = Math.max(item.espaco.total_membros || 1, 1 + extrasCount);
@@ -90,7 +98,7 @@ export class Sidebar implements OnInit {
             id,
             nome,
             tipo,
-            cor: meta.cor || padrao.cor,
+            cor: corEspaco,
             icone: meta.icone || padrao.icone,
             numParticipantes: tipo === 'individual' ? 1 : Math.max(2, totalMembros)
           };

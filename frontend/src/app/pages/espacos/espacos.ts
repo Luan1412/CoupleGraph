@@ -33,6 +33,7 @@ export interface ItemEspaco {
 interface EspacoMetaStorage {
   tipo?: 'compartilhado' | 'individual';
   cor?: string;
+  corPersonalizada?: boolean;
   icone?: IconeEspaco;
   participantesExtras?: ParticipanteEspaco[];
 }
@@ -168,11 +169,19 @@ export class Espacos implements OnInit {
 
     this.espacoService.listarMeusEspacos().subscribe({
       next: (dados) => {
+        const coresUsadas = new Set<string>();
         const espacosBase: ItemEspaco[] = (dados || []).map((item, idx) => {
           const id = item.espaco.id;
           const nome = item.espaco.nome;
           const meta = metaMap[id] || {};
           const padrao = this.inferirVisualPorNome(nome, idx);
+
+          let corEspaco: string = meta.cor || padrao.cor;
+          if (!meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
+            const alternativa = this.coresDisponiveis.find(c => !coresUsadas.has(c.toUpperCase()));
+            corEspaco = alternativa || this.coresDisponiveis[idx % this.coresDisponiveis.length];
+          }
+          coresUsadas.add(corEspaco.toUpperCase());
 
           const saldoReal = Number(item.espaco.saldo ?? 0);
           const despesasReal = Number(item.espaco.despesas ?? 0);
@@ -196,7 +205,7 @@ export class Espacos implements OnInit {
             id,
             nome,
             tipo: tipoReal,
-            cor: meta.cor || padrao.cor,
+            cor: corEspaco,
             icone: meta.icone || padrao.icone,
             saldo: saldoReal,
             receitas: receitasReal,
@@ -262,14 +271,16 @@ export class Espacos implements OnInit {
       event.stopPropagation();
     }
     this.selecionarEspacoAtivo(espaco, false);
-    this.router.navigate(['/movimentacoes']);
+    this.router.navigate(['/movimentacoes'], { queryParams: { espaco: espaco.id } });
   }
 
   // --- CRIAR NOVO ESPAÇO ---
   abrirModalNovoEspaco(): void {
     this.novoEspacoNome = '';
     this.novoEspacoTipo = 'compartilhado';
-    this.novoEspacoCor = '#22C55E';
+    const coresEmUso = new Set(this.listaEspacos().map(e => (e.cor || '').toUpperCase()));
+    const corLivre = this.coresDisponiveis.find(c => !coresEmUso.has(c.toUpperCase()));
+    this.novoEspacoCor = corLivre || this.coresDisponiveis[this.listaEspacos().length % this.coresDisponiveis.length];
     this.novoEspacoIcone = 'casal';
     this.novoEspacoEmailConvite = '';
     this.novosConvidados.set([]);
@@ -373,6 +384,7 @@ export class Espacos implements OnInit {
         this.salvarMetaNoStorage(novo.id, {
           tipo: this.novoEspacoTipo,
           cor: this.novoEspacoCor,
+          corPersonalizada: true,
           icone: this.novoEspacoIcone,
           participantesExtras
         });
@@ -513,6 +525,7 @@ export class Espacos implements OnInit {
     this.salvarMetaNoStorage(esp.id, {
       tipo: esp.tipo,
       cor: esp.cor,
+      corPersonalizada: true,
       icone: esp.icone,
       participantesExtras: extras
     });

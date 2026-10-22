@@ -35,6 +35,7 @@ export class EspacoService {
   // Sinais compartilhados entre Sidebar e páginas
   readonly espacoAtivoId = signal<number | null>(this.lerEspacoAtivoInicial());
   readonly versaoEspacos = signal<number>(0);
+  readonly selecaoEspacoTick = signal<number>(0);
 
   private lerEspacoAtivoInicial(): number | null {
     if (isPlatformBrowser(this.platformId)) {
@@ -46,6 +47,7 @@ export class EspacoService {
 
   definirEspacoAtivoId(id: number | null): void {
     this.espacoAtivoId.set(id);
+    this.selecaoEspacoTick.update(v => v + 1);
     if (isPlatformBrowser(this.platformId)) {
       if (id !== null) {
         localStorage.setItem(STORAGE_ACTIVE_ID_KEY, String(id));
