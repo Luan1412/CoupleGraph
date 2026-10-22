@@ -1,44 +1,915 @@
-<div class="dashboard-container">
-  
-  <h2 class="section-title">Resumo geral</h2>
-  <div class="cards-grid">
-    <app-summary-card 
-      title="Saldo disponível" 
-      value="R$ 3.250" 
-      icon="/icons/ic-saldo.svg" 
-      subtitle="Disponível atualmente" 
-      [highlight]="true" 
-      iconBgClass="bg-green-light">
+<div class="dashboard-page">
+
+  <!-- 1. HERO HEADER DE BOAS-VINDAS & AÇÕES RÁPIDAS -->
+  <header class="dashboard-hero">
+    <div class="hero-left">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        <span>Visão financeira · {{ nomeEspacoFiltrado() }}</span>
+      </div>
+      <h1 class="hero-title">Olá, {{ obterPrimeiroNome() }}!</h1>
+      <p class="hero-subtitle">
+        Acompanhe o saldo consolidado, as últimas movimentações e o desempenho dos seus espaços em tempo real.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <!-- Seletor rápido de espaço -->
+      <div class="space-filter-pill">
+        <svg class="filter-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <select
+          class="hero-select"
+          [ngModel]="espacoFiltro()"
+          (ngModelChange)="onEspacoFiltroChange($event)"
+          aria-label="Filtrar espaço no início">
+          <option value="todos">Todos os espaços</option>
+          @for (esp of todosEspacos(); track esp.id) {
+            <option [value]="esp.id.toString()">{{ esp.nome }}</option>
+          }
+        </select>
+        <span class="select-chevron">▾</span>
+      </div>
+
+      <button type="button" class="btn-hero-outline" (click)="irParaEspacos()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        <span>Meus espaços</span>
+      </button>
+
+      <button type="button" class="btn-hero-primary" (click)="abrirNovaMovimentacao()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Nova movimentação</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. CARDS DE INDICADORES PRINCIPAIS -->
+  <section class="cards-grid">
+    <app-summary-card
+      title="SALDO DISPONÍVEL"
+      [value]="formatarMoeda(saldoTotal())"
+      [icon]="saldoTotal() >= 0 ? '/icons/ic-saldo.svg' : '/icons/ic-saldo-negativo.svg'"
+      [subtitle]="espacoFiltro() === 'todos' ? 'Consolidado de todos os espaços' : 'Saldo do espaço selecionado'"
+      [highlight]="true"
+      [iconBgClass]="saldoTotal() >= 0 ? 'bg-green-light' : 'bg-red-light'">
     </app-summary-card>
 
-    <app-summary-card 
-      title="Receitas" 
-      value="R$ 5.000" 
-      icon="/icons/ic-receitas.svg" 
+    <app-summary-card
+      title="RECEITAS"
+      [value]="formatarMoeda(receitasTotais())"
+      icon="/icons/ic-receitas.svg"
+      subtitle="Total de entradas acumuladas"
       [highlight]="true"
       iconBgClass="bg-green-light">
     </app-summary-card>
 
-    <app-summary-card 
-      title="Despesas" 
-      value="R$ 1.750" 
-      icon="/icons/ic-despesas.svg" 
+    <app-summary-card
+      title="DESPESAS"
+      [value]="formatarMoeda(despesasTotais())"
+      icon="/icons/ic-despesas.svg"
+      subtitle="Total de saídas registradas"
       [highlight]="true"
       iconBgClass="bg-red-light">
     </app-summary-card>
+
+    <app-summary-card
+      title="TAXA DE ECONOMIA"
+      [value]="taxaEconomia() + '%'"
+      icon="/icons/ic-economia.svg"
+      [subtitle]="movimentacoesFiltradas().length + ' lançamento(s) registrado(s)'"
+      [highlight]="true"
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+  </section>
+
+  <!-- 3. GRID PRINCIPAL DE CONTEÚDO -->
+  <div class="main-dashboard-grid">
+
+    <!-- COLUNA ESQUERDA: Últimas Movimentações + Distribuição de Gastos -->
+    <div class="dashboard-col-left">
+
+      <!-- Card: Últimas Movimentações -->
+      <section class="dash-card">
+        <div class="dash-card-header">
+          <div>
+            <h2 class="dash-card-title">Últimas movimentações</h2>
+            <p class="dash-card-subtitle">Lançamentos mais recentes em {{ nomeEspacoFiltrado() }}</p>
+          </div>
+          <button type="button" class="btn-link-green" (click)="verTodasMovimentacoes()">
+            <span>Ver todas</span>
+            <span class="arrow">›</span>
+          </button>
+        </div>
+
+        @if (carregando()) {
+          <div class="dash-empty-box">
+            <p>Carregando movimentações...</p>
+          </div>
+        } @else if (ultimasMovimentacoes().length === 0) {
+          <div class="dash-empty-box">
+            <div class="empty-circle-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+            <h4 class="empty-title">Nenhuma movimentação registrada</h4>
+            <p class="empty-desc">Adicione sua primeira receita ou despesa para acompanhar seus gráficos e saldos.</p>
+            <button type="button" class="btn-empty-cta" (click)="abrirNovaMovimentacao()">
+              + Registrar movimentação
+            </button>
+          </div>
+        } @else {
+          <div class="recent-transactions-list">
+            @for (mov of ultimasMovimentacoes(); track mov.id) {
+              <div class="transaction-row" (click)="abrirMovimentacaoEspecifica(mov)">
+                <div class="tx-left">
+                  <div class="tx-type-icon" [class.income]="mov.tipo === 'receita'" [class.expense]="mov.tipo === 'despesa'">
+                    @if (mov.tipo === 'receita') {
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                      </svg>
+                    } @else {
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <polyline points="19 12 12 19 5 12"></polyline>
+                      </svg>
+                    }
+                  </div>
+
+                  <div class="tx-info">
+                    <span class="tx-desc">{{ mov.descricao }}</span>
+                    <div class="tx-meta-tags">
+                      <span class="tx-cat-pill">
+                        <span class="cat-dot" [style.background-color]="obterCorCategoria(mov.categoria)"></span>
+                        {{ mov.categoria }}
+                      </span>
+                      @if (mov.espaco_nome) {
+                        <span class="tx-space-pill">{{ mov.espaco_nome }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tx-right">
+                  <span class="tx-amount" [class.income]="mov.tipo === 'receita'" [class.expense]="mov.tipo === 'despesa'">
+                    {{ mov.tipo === 'receita' ? '+' : '-' }} {{ formatarMoeda(mov.valor) }}
+                  </span>
+                  <span class="tx-date">{{ formatarDataCurta(mov.data) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Card: Distribuição de Gastos (Por Categoria / Por Espaço) -->
+      <section class="dash-card">
+        <div class="dash-card-header">
+          <div>
+            <h2 class="dash-card-title">Distribuição de despesas</h2>
+            <p class="dash-card-subtitle">Total de saídas: <strong>{{ formatarMoeda(totalDistribuicaoAtiva()) }}</strong></p>
+          </div>
+
+          <div class="segmented-tabs">
+            <button
+              type="button"
+              class="seg-tab"
+              [class.active]="abaDistribuicao() === 'categoria'"
+              (click)="abaDistribuicao.set('categoria')">
+              Por categoria
+            </button>
+            <button
+              type="button"
+              class="seg-tab"
+              [class.active]="abaDistribuicao() === 'espaco'"
+              (click)="abaDistribuicao.set('espaco')">
+              Por espaço
+            </button>
+          </div>
+        </div>
+
+        @if (itensDistribuicaoAtiva().length === 0) {
+          <div class="dash-empty-box compact">
+            <p class="empty-desc">Sem despesas registradas para exibir no gráfico.</p>
+          </div>
+        } @else {
+          <!-- Barra Multi-segmento no Topo -->
+          <div class="multi-progress-bar">
+            @for (item of itensDistribuicaoAtiva(); track item.nome) {
+              <div
+                class="multi-segment"
+                [style.width.%]="item.percentual"
+                [style.background-color]="item.cor"
+                [title]="item.nome + ': ' + formatarMoeda(item.valor)">
+              </div>
+            }
+          </div>
+
+          <!-- Lista de Itens com Barra e Percentual -->
+          <div class="distribution-list">
+            @for (item of itensDistribuicaoAtiva(); track item.nome) {
+              <div class="dist-item">
+                <div class="dist-top">
+                  <div class="dist-label-group">
+                    <span class="dist-dot" [style.background-color]="item.cor"></span>
+                    <span class="dist-name">{{ item.nome }}</span>
+                    <span class="dist-pct">{{ item.percentual }}%</span>
+                  </div>
+                  <strong class="dist-val">{{ formatarMoeda(item.valor) }}</strong>
+                </div>
+                <div class="dist-bar-track">
+                  <div
+                    class="dist-bar-fill"
+                    [style.width.%]="item.percentual"
+                    [style.background-color]="item.cor">
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+    </div>
+
+    <!-- COLUNA DIREITA: Seus Espaços + Resumo de Orçamento -->
+    <div class="dashboard-col-right">
+
+      <!-- Card: Seus Espaços -->
+      <section class="dash-card">
+        <div class="dash-card-header">
+          <div>
+            <h2 class="dash-card-title">Seus espaços</h2>
+            <p class="dash-card-subtitle">{{ todosEspacos().length }} espaço(s) ativo(s)</p>
+          </div>
+          <button type="button" class="btn-add-space-sm" (click)="abrirModalNovoEspaco()">
+            + Criar espaço
+          </button>
+        </div>
+
+        @if (carregando()) {
+          <div class="dash-empty-box compact">
+            <p>Carregando espaços...</p>
+          </div>
+        } @else if (todosEspacos().length === 0) {
+          <div class="dash-empty-box compact">
+            <h4 class="empty-title">Você ainda não tem espaços</h4>
+            <p class="empty-desc">Crie seu primeiro espaço individual ou compartilhado.</p>
+            <button type="button" class="btn-empty-cta" (click)="abrirModalNovoEspaco()">
+              + Criar primeiro espaço
+            </button>
+          </div>
+        } @else {
+          <div class="dash-spaces-list">
+            @for (esp of todosEspacos(); track esp.id) {
+              <article
+                class="dash-space-item"
+                [class.is-active]="espacoService.espacoAtivoId() === esp.id"
+                (click)="acessarEspaco(esp)">
+                <div class="dash-space-left">
+                  <div class="dash-space-avatar" [style.background-color]="esp.cor">
+                    @switch (esp.icone) {
+                      @case ('casa') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                      }
+                      @case ('viagem') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                        </svg>
+                      }
+                      @case ('pessoal') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      }
+                      @default {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                      }
+                    }
+                  </div>
+
+                  <div class="dash-space-texts">
+                    <div class="dash-space-title-row">
+                      <h4 class="dash-space-name">{{ esp.nome }}</h4>
+                      @if (espacoService.espacoAtivoId() === esp.id) {
+                        <span class="badge-ativo-mini">Atual</span>
+                      }
+                    </div>
+                    <span class="dash-space-type">{{ esp.tipo }}</span>
+                  </div>
+                </div>
+
+                <div class="dash-space-right">
+                  <div class="dash-space-balance">
+                    <span class="bal-label">Saldo</span>
+                    <strong
+                      class="bal-val"
+                      [class.pos]="esp.saldo > 0"
+                      [class.neg]="esp.saldo < 0">
+                      {{ formatarMoeda(esp.saldo) }}
+                    </strong>
+                  </div>
+                  <span class="space-chevron">›</span>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Card: Resumo do Orçamento Planejado -->
+      <section class="dash-card budget-overview-card">
+        <div class="dash-card-header">
+          <div>
+            <h2 class="dash-card-title">Teto de orçamento</h2>
+            <p class="dash-card-subtitle">
+              {{ tetoGeralManualAtivo() ? 'Teto mensal geral definido manualmente' : 'Soma automática dos limites por categoria' }}
+            </p>
+          </div>
+          <button type="button" class="btn-link-green" (click)="abrirModalOrcamento()">
+            <span>Definir teto</span>
+            <span class="arrow">›</span>
+          </button>
+        </div>
+
+        <div class="budget-meter-box">
+          <div class="budget-meter-top">
+            <span class="meter-pct">{{ percentualOrcamentoUsado() }}% utilizado</span>
+            <span class="meter-values">
+              <strong>{{ formatarMoeda(despesasTotais()) }}</strong> de {{ formatarMoeda(totalPlanejadoOrcamento()) }}
+            </span>
+          </div>
+          <div class="budget-meter-track">
+            <div
+              class="budget-meter-fill"
+              [class.warning]="percentualOrcamentoUsado() >= 80"
+              [style.width.%]="percentualOrcamentoUsado()">
+            </div>
+          </div>
+          <p class="budget-meter-hint">
+            @if (totalPlanejadoOrcamento() > despesasTotais()) {
+              Você ainda possui <strong>{{ formatarMoeda(totalPlanejadoOrcamento() - despesasTotais()) }}</strong> livres dentro do teto planejado.
+            } @else {
+              Os gastos atingiram o limite planejado. Clique em <strong>Definir teto</strong> para ajustar seu orçamento.
+            }
+          </p>
+        </div>
+      </section>
+
+    </div>
+
   </div>
 
-  <div class="bottom-grid">
-    
-    <app-category-expenses
-      [total]="totalGastos"
-      [categorias]="gastosCategorias">
-    </app-category-expenses>
+  <!-- Drawer Lateral: Definir Teto de Orçamento & Limites por Categoria -->
+  @if (modalOrcamentoAberto()) {
+    <div class="drawer-backdrop" (click)="fecharModalOrcamento()">
+      <aside class="side-drawer" (click)="$event.stopPropagation()">
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Teto e limites de orçamento</h2>
+            <p class="drawer-subtitle">Defina um teto mensal geral ou ajuste os limites individuais de cada categoria.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalOrcamento()" aria-label="Fechar">✕</button>
+        </div>
 
-    <app-spaces-widget
-      [espacos]="meusEspacos">
-    </app-spaces-widget>
+        <div class="drawer-body">
 
-  </div>
+          <!-- Seção 1: Teto Geral de Orçamento -->
+          <div class="budget-drawer-box highlight-box">
+            <div class="teto-geral-header">
+              <div>
+                <h4 class="box-sec-title">Teto geral de orçamento mensal</h4>
+                <p class="box-sec-desc">
+                  Informe um teto global fixo ou deixe em branco para usar a soma automática das categorias ({{ formatarMoeda(somaCategoriasEdicao()) }}).
+                </p>
+              </div>
+              @if (tetoGeralEdicao !== null && tetoGeralEdicao > 0) {
+                <button type="button" class="btn-auto-soma" (click)="usarSomaCategoriasNoTeto()">
+                  Usar soma automática
+                </button>
+              }
+            </div>
+
+            <div class="currency-input-wrap">
+              <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+              <input
+                type="number"
+                min="0"
+                class="drawer-input"
+                [(ngModel)]="tetoGeralEdicao"
+                [placeholder]="'Automático (' + formatarMoeda(somaCategoriasEdicao()) + ')'"
+              />
+            </div>
+          </div>
+
+          <!-- Seção 2: Adicionar Nova Categoria -->
+          <div class="budget-drawer-box">
+            <h4 class="box-sec-title">+ Adicionar categoria</h4>
+            <div class="new-cat-grid">
+              <input
+                type="text"
+                class="drawer-input"
+                [(ngModel)]="novaCategoriaNome"
+                placeholder="Nome (ex: Saúde, Pets...)"
+                (keyup.enter)="adicionarCategoriaNaEdicao()"
+              />
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  class="drawer-input"
+                  [(ngModel)]="novaCategoriaLimite"
+                  placeholder="Limite (0,00)"
+                  (keyup.enter)="adicionarCategoriaNaEdicao()"
+                />
+              </div>
+              <button type="button" class="btn-add-cat-drawer" (click)="adicionarCategoriaNaEdicao()">
+                + Adicionar categoria
+              </button>
+            </div>
+            @if (erroModalOrcamento()) {
+              <span class="drawer-error-msg">{{ erroModalOrcamento() }}</span>
+            }
+          </div>
+
+          <!-- Seção 3: Lista de Categorias e Limites -->
+          <div class="drawer-categories-section">
+            <span class="drawer-section-label">Limites por categoria</span>
+            <div class="drawer-categories-list">
+              @for (cat of categoriasEdicao(); track cat.id ?? cat.nome) {
+                <div class="drawer-cat-row">
+                  <div class="drawer-cat-left">
+                    <span class="cat-dot-lg" [style.background-color]="cat.cor"></span>
+                    <span class="cat-row-name">{{ cat.nome }}</span>
+                  </div>
+
+                  <div class="drawer-cat-right">
+                    <span class="currency-prefix-sm">{{ themeService.obterSimbolo() }}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      class="drawer-input-sm"
+                      [(ngModel)]="cat.limite"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      class="btn-remove-cat-row"
+                      (click)="removerCategoriaNaEdicao(cat.id ?? cat.nome)"
+                      title="Remover categoria">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <div class="drawer-footer">
+          <button type="button" class="btn-drawer-save" (click)="salvarModalOrcamento()">Salvar teto e limites</button>
+          <button type="button" class="btn-drawer-cancel" (click)="fecharModalOrcamento()">Cancelar</button>
+        </div>
+      </aside>
+    </div>
+  }
+
+  <!-- Drawer Lateral: Criar Novo Espaço / Grupo direto no Início -->
+  @if (modalNovoEspacoAberto()) {
+    <div class="drawer-backdrop" (click)="fecharModalNovoEspaco()">
+      <aside class="side-drawer" (click)="$event.stopPropagation()">
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Novo espaço</h2>
+            <p class="drawer-subtitle">Crie um grupo ou espaço individual para organizar suas finanças.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalNovoEspaco()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="drawer-body">
+
+          <!-- Nome do Espaço -->
+          <div class="drawer-categories-section">
+            <label class="drawer-section-label" for="inputNovoEspacoDash">Nome do espaço</label>
+            <input
+              id="inputNovoEspacoDash"
+              type="text"
+              maxlength="50"
+              class="drawer-input"
+              [(ngModel)]="novoEspacoNome"
+              placeholder="Ex: Casa, Viagem, Família, Pessoal..."
+              autofocus
+              (keyup.enter)="salvarNovoEspaco()"
+            />
+            <div class="char-counter-dash">{{ novoEspacoNome.length }}/50</div>
+          </div>
+
+          <!-- Tipo de Espaço -->
+          <div class="drawer-categories-section">
+            <span class="drawer-section-label">Tipo de espaço</span>
+            <div class="radio-options-group-dash">
+              <label
+                class="radio-option-card-dash"
+                [class.selected]="novoEspacoTipo === 'individual'"
+                (click)="selecionarTipoNovoEspaco('individual')">
+                <span class="custom-radio-dash" [class.checked]="novoEspacoTipo === 'individual'"></span>
+                <span class="radio-text-dash"><strong>Individual</strong> — somente eu</span>
+              </label>
+
+              <label
+                class="radio-option-card-dash"
+                [class.selected]="novoEspacoTipo === 'compartilhado'"
+                (click)="selecionarTipoNovoEspaco('compartilhado')">
+                <span class="custom-radio-dash" [class.checked]="novoEspacoTipo === 'compartilhado'"></span>
+                <span class="radio-text-dash"><strong>Compartilhado</strong> — com outras pessoas</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Ícone do Espaço (Grupo, Casa, Viagem, Pessoal) -->
+          <div class="drawer-categories-section">
+            <span class="drawer-section-label">Ícone do espaço</span>
+            <div class="icon-cards-grid-dash">
+              @for (ic of iconesDisponiveis; track ic.id) {
+                <button
+                  type="button"
+                  class="icon-visual-btn-dash"
+                  [class.selected]="novoEspacoIcone === ic.id"
+                  (click)="selecionarIconeNovoEspaco(ic.id)">
+                  <div class="icon-preview-circle-dash" [style.background-color]="novoEspacoIcone === ic.id ? novoEspacoCor : 'transparent'">
+                    @switch (ic.id) {
+                      @case ('casa') {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                      }
+                      @case ('viagem') {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                        </svg>
+                      }
+                      @case ('pessoal') {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      }
+                      @default {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                      }
+                    }
+                  </div>
+                  <span class="icon-btn-label-dash">{{ ic.label }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Cor de Identificação -->
+          <div class="drawer-categories-section">
+            <span class="drawer-section-label">Cor de identificação</span>
+            <div class="color-swatches-grid-dash">
+              @for (cor of CORES_PALETA; track cor) {
+                <button
+                  type="button"
+                  class="color-swatch-btn-dash"
+                  [style.background-color]="cor"
+                  [class.selected]="novoEspacoCor === cor"
+                  (click)="selecionarCorNovoEspaco(cor)"
+                  [attr.aria-label]="'Selecionar cor ' + cor">
+                  @if (novoEspacoCor === cor) {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Convidar Participantes (Apenas quando Compartilhado) -->
+          @if (novoEspacoTipo === 'compartilhado') {
+            <div class="drawer-categories-section">
+              <label class="drawer-section-label" for="inputEmailConviteDash">Convidar pessoas por e-mail (opcional)</label>
+              <div class="new-cat-grid">
+                <input
+                  id="inputEmailConviteDash"
+                  type="email"
+                  class="drawer-input"
+                  [(ngModel)]="novoEspacoEmailConvite"
+                  placeholder="pessoa@email.com"
+                  (keyup.enter)="adicionarConvidadoLista()"
+                />
+                <button type="button" class="btn-add-cat-drawer" (click)="adicionarConvidadoLista()">
+                  + Adicionar participante
+                </button>
+              </div>
+
+              @if (novosConvidados().length > 0) {
+                <div class="guest-chips-list-dash">
+                  @for (conv of novosConvidados(); track conv) {
+                    <span class="guest-chip-dash">
+                      {{ conv }}
+                      <button type="button" class="remove-chip-dash" (click)="removerConvidadoLista(conv)">✕</button>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (erroNovoEspaco()) {
+            <span class="drawer-error-msg">{{ erroNovoEspaco() }}</span>
+          }
+
+          <!-- Prévia do Espaço em Tempo Real -->
+          <div class="space-preview-box-dash">
+            <span class="preview-header-label-dash">PRÉVIA DO ESPAÇO</span>
+            <div class="preview-card-inner-dash">
+              <div class="dash-space-avatar" [style.background-color]="novoEspacoCor">
+                @switch (novoEspacoIcone) {
+                  @case ('casa') {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                      <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                  }
+                  @case ('viagem') {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                    </svg>
+                  }
+                  @case ('pessoal') {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  }
+                  @default {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                  }
+                }
+              </div>
+              <div class="dash-space-texts">
+                <strong class="dash-space-name">{{ novoEspacoNome.trim() || 'Nome do espaço' }}</strong>
+                <span class="dash-space-type">
+                  {{ novoEspacoTipo === 'compartilhado' ? 'Espaço compartilhado' : 'Espaço individual' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="drawer-footer">
+          <button
+            type="button"
+            class="btn-drawer-save"
+            [disabled]="!novoEspacoNome.trim()"
+            (click)="salvarNovoEspaco()">
+            Criar espaço
+          </button>
+          <button type="button" class="btn-drawer-cancel" (click)="fecharModalNovoEspaco()">Cancelar</button>
+        </div>
+      </aside>
+    </div>
+  }
+
+  <!-- Drawer Lateral: Nova Movimentação direto no Início -->
+  @if (modalNovaMovimentacaoAberto()) {
+    <div class="drawer-backdrop" (click)="fecharModalNovaMovimentacao()">
+      <aside class="side-drawer" (click)="$event.stopPropagation()">
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Nova movimentação</h2>
+            <p class="drawer-subtitle">Adicione um novo lançamento financeiro sem sair do início.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalNovaMovimentacao()" aria-label="Fechar">✕</button>
+        </div>
+
+        <form class="drawer-form-dash" (ngSubmit)="salvarNovaMovimentacaoDash()">
+          <div class="drawer-body">
+
+            <!-- Toggle Tipo: Despesa ou Receita -->
+            <div class="drawer-categories-section">
+              <span class="drawer-section-label">Tipo de lançamento</span>
+              <div class="mov-tipo-toggle-dash">
+                <button
+                  type="button"
+                  class="mov-tipo-btn-dash expense"
+                  [class.active]="formTipo() === 'despesa'"
+                  (click)="formTipo.set('despesa')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                  </svg>
+                  <span>Despesa</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="mov-tipo-btn-dash income"
+                  [class.active]="formTipo() === 'receita'"
+                  (click)="formTipo.set('receita')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                  </svg>
+                  <span>Receita</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Valor -->
+            <div class="drawer-categories-section">
+              <label class="drawer-section-label" for="dashMovValorInput">Valor *</label>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+                <input
+                  id="dashMovValorInput"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  class="drawer-input"
+                  placeholder="0,00"
+                  [(ngModel)]="formValor"
+                  name="dashValor"
+                  autofocus
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Descrição -->
+            <div class="drawer-categories-section">
+              <label class="drawer-section-label" for="dashMovDescInput">Descrição *</label>
+              <input
+                id="dashMovDescInput"
+                type="text"
+                class="drawer-input"
+                placeholder="Ex: Supermercado mensal, Salário, Internet..."
+                [(ngModel)]="formDescricao"
+                name="dashDescricao"
+                required
+              />
+            </div>
+
+            <!-- Linha Dupla: Categoria & Espaço -->
+            <div class="form-row-dupla-dash">
+              <div class="drawer-categories-section">
+                <label class="drawer-section-label" for="dashMovCatInput">Categoria *</label>
+                <div class="combobox-wrapper-dash">
+                  <div class="combobox-input-wrap-dash">
+                    <input
+                      id="dashMovCatInput"
+                      type="text"
+                      class="drawer-input"
+                      [ngModel]="formCategoria"
+                      (input)="onInputCategoriaDash($event)"
+                      (focus)="abrirDropdownCategoriaDash()"
+                      (blur)="fecharDropdownCategoriaDash()"
+                      name="dashCategoria"
+                      placeholder="Selecione ou digite..."
+                      autocomplete="off"
+                      required
+                    />
+                    <button
+                      type="button"
+                      class="combobox-arrow-dash"
+                      (mousedown)="toggleDropdownCategoriaDash($event)"
+                      tabindex="-1">
+                      ▼
+                    </button>
+                  </div>
+
+                  @if (dropdownCategoriaAberto()) {
+                    <ul class="combobox-menu-dash">
+                      @for (cat of categoriasFiltradas(); track cat.id ?? cat.nome) {
+                        <li class="combobox-item-dash" (mousedown)="selecionarCategoriaDash(cat.nome)">
+                          <span class="cat-dot-lg" [style.background-color]="cat.cor"></span>
+                          <span>{{ cat.nome }}</span>
+                        </li>
+                      }
+                      @if (formCategoria.trim() && !categoriaJaExisteDash(formCategoria)) {
+                        <li class="combobox-item-dash novo" (mousedown)="selecionarCategoriaDash(formCategoria.trim())">
+                          <span>+ Criar "{{ formCategoria.trim() }}"</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+
+              <div class="drawer-categories-section">
+                <label class="drawer-section-label" for="dashMovEspacoInput">Espaço *</label>
+                <select
+                  id="dashMovEspacoInput"
+                  class="drawer-input"
+                  [(ngModel)]="formEspacoId"
+                  name="dashEspacoId"
+                  required>
+                  @for (esp of todosEspacos(); track esp.id) {
+                    <option [value]="esp.id">{{ esp.nome }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Data -->
+            <div class="drawer-categories-section">
+              <label class="drawer-section-label" for="dashMovDataInput">Data do lançamento</label>
+              <input
+                id="dashMovDataInput"
+                type="date"
+                class="drawer-input"
+                [(ngModel)]="formData"
+                name="dashData"
+              />
+            </div>
+
+            <!-- Prévia do Lançamento -->
+            <div class="space-preview-box-dash">
+              <span class="preview-header-label-dash">PRÉVIA DO LANÇAMENTO</span>
+              <div class="preview-mov-row-dash">
+                <div class="tx-left">
+                  <div class="tx-type-icon" [class.income]="formTipo() === 'receita'" [class.expense]="formTipo() === 'despesa'">
+                    @if (formTipo() === 'receita') {
+                      ↑
+                    } @else {
+                      ↓
+                    }
+                  </div>
+                  <div class="tx-info">
+                    <span class="tx-desc">{{ formDescricao.trim() || 'Descrição do lançamento' }}</span>
+                    <span class="dash-space-type">{{ formCategoria.trim() || 'Sem categoria' }}</span>
+                  </div>
+                </div>
+                <strong class="tx-amount" [class.income]="formTipo() === 'receita'" [class.expense]="formTipo() === 'despesa'">
+                  {{ formTipo() === 'receita' ? '+' : '-' }} {{ formatarMoeda(formValor || 0) }}
+                </strong>
+              </div>
+            </div>
+
+            @if (erroModalMovimentacao()) {
+              <span class="drawer-error-msg">{{ erroModalMovimentacao() }}</span>
+            }
+
+          </div>
+
+          <div class="drawer-footer">
+            <button type="submit" class="btn-drawer-save" [disabled]="salvandoMovimentacao()">
+              {{ salvandoMovimentacao() ? 'Salvando...' : 'Salvar movimentação' }}
+            </button>
+            <button type="button" class="btn-drawer-cancel" (click)="fecharModalNovaMovimentacao()" [disabled]="salvandoMovimentacao()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  }
+
+  <!-- Toast Flutuante -->
+  @if (toastMensagem()) {
+    <div class="toast-feedback-dash">
+      <span class="toast-check-dash">✓</span>
+      <span>{{ toastMensagem() }}</span>
+    </div>
+  }
 
 </div>

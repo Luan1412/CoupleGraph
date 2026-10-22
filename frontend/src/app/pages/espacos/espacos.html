@@ -1,0 +1,733 @@
+<div class="espacos-page">
+
+  <!-- 1. CABEÇALHO DA TELA -->
+  <header class="espacos-header">
+    <div class="header-left">
+      <div class="title-row">
+        <div class="header-icon-badge">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <h1 class="page-title">Meus espaços</h1>
+      </div>
+      <p class="page-subtitle">
+        Organize suas finanças pessoais e compartilhe objetivos com quem importa.
+      </p>
+    </div>
+
+    <div class="header-right">
+      <button type="button" class="btn-criar-principal" (click)="abrirModalNovoEspaco()">
+        <span class="plus-sign">+</span>
+        <span>Criar espaço</span>
+      </button>
+    </div>
+  </header>
+
+  @if (carregando()) {
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>Carregando seus espaços financeiros...</p>
+    </div>
+  } @else {
+
+    <!-- 2. CARD DO ESPAÇO ATIVO (DESTAQUE NO TOPO) -->
+    @if (espacoAtivo(); as ativo) {
+      <section class="active-space-banner" (click)="acessarDetalhesEspaco(ativo)">
+        <div class="active-banner-left">
+          <div class="space-circle-icon large" [style.background-color]="ativo.cor">
+            @switch (ativo.icone) {
+              @case ('casa') {
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              }
+              @case ('viagem') {
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                </svg>
+              }
+              @case ('pessoal') {
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              }
+              @default {
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              }
+            }
+          </div>
+
+          <div class="active-banner-info">
+            <div class="active-title-row">
+              <h2 class="active-space-name">{{ ativo.nome }}</h2>
+              <span class="badge-espaco-atual">Espaço atual</span>
+            </div>
+            <p class="active-space-meta">{{ obterDescricaoTipo(ativo) }}</p>
+          </div>
+        </div>
+
+        <div class="active-banner-summary">
+          <div class="summary-pill">
+            <span class="summary-pill-label">Saldo atual</span>
+            <strong class="summary-pill-val positive" [class.negative]="ativo.saldo < 0">
+              {{ formatarMoeda(ativo.saldo) }}
+            </strong>
+          </div>
+          <div class="summary-pill hide-mobile">
+            <span class="summary-pill-label">Entradas</span>
+            <strong class="summary-pill-val">{{ formatarMoeda(ativo.receitas) }}</strong>
+          </div>
+          <div class="summary-pill hide-mobile">
+            <span class="summary-pill-label">Saídas</span>
+            <strong class="summary-pill-val expense">{{ formatarMoeda(ativo.despesas) }}</strong>
+          </div>
+        </div>
+
+        <div class="active-banner-actions" (click)="$event.stopPropagation()">
+          <button type="button" class="btn-gerenciar-ativo" (click)="gerenciarEspaco(ativo, $event)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Gerenciar espaço</span>
+            <span class="chevron">›</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn-arrow-access"
+            title="Acessar movimentações deste espaço"
+            (click)="acessarDetalhesEspaco(ativo, $event)">
+            ›
+          </button>
+        </div>
+      </section>
+    }
+
+    <!-- 3. LISTA DE ESPAÇOS HORIZONTAIS -->
+    <section class="spaces-section">
+      <div class="section-bar">
+        <h3 class="section-heading">Seus espaços</h3>
+        <button type="button" class="btn-novo-secondary" (click)="abrirModalNovoEspaco()">
+          + Novo espaço
+        </button>
+      </div>
+
+      @if (listaEspacos().length === 0) {
+        <div class="empty-spaces-card">
+          <p>Você ainda não possui espaços financeiros cadastrados.</p>
+          <button type="button" class="btn-criar-principal" (click)="abrirModalNovoEspaco()">
+            + Criar meu primeiro espaço
+          </button>
+        </div>
+      } @else {
+        <div class="horizontal-spaces-list">
+          @for (item of listaEspacos(); track item.id) {
+            <article
+              class="space-horizontal-card"
+              [class.is-active]="espacoAtivo()?.id === item.id"
+              (click)="selecionarEspacoAtivo(item)">
+
+              <!-- Coluna 1: Ícone + Nome + Tipo -->
+              <div class="card-col-main">
+                <div class="space-circle-icon" [style.background-color]="item.cor">
+                  @switch (item.icone) {
+                    @case ('casa') {
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                      </svg>
+                    }
+                    @case ('viagem') {
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                      </svg>
+                    }
+                    @case ('pessoal') {
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    }
+                    @default {
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                    }
+                  }
+                </div>
+
+                <div class="space-text-block">
+                  <div class="space-name-line">
+                    <h4 class="space-item-title">{{ item.nome }}</h4>
+                    @if (espacoAtivo()?.id === item.id) {
+                      <span class="badge-atual-sm">Atual</span>
+                    }
+                  </div>
+                  <p class="space-item-subtitle">{{ obterDescricaoTipo(item) }}</p>
+                </div>
+              </div>
+
+              <!-- Coluna 2: Participantes -->
+              <div class="card-col-participants">
+                @for (part of item.participantes; track part.nome) {
+                  <div class="participant-item">
+                    <div class="participant-avatar" [style.background-color]="part.corAvatar">
+                      {{ part.iniciais }}
+                    </div>
+                    <span class="participant-name">{{ part.nome }}</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Coluna 3: Saldo + Ações -->
+              <div class="card-col-balance">
+                <div class="balance-info">
+                  <span class="balance-label">Saldo do espaço</span>
+                  <strong
+                    class="balance-value"
+                    [class.highlight-green]="espacoAtivo()?.id === item.id && item.saldo >= 0"
+                    [class.highlight-red]="item.saldo < 0">
+                    {{ formatarMoeda(item.saldo) }}
+                  </strong>
+                </div>
+
+                <div class="card-quick-actions">
+                  <button
+                    type="button"
+                    class="btn-icon-manage"
+                    title="Gerenciar espaço"
+                    (click)="gerenciarEspaco(item, $event)">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-chevron-go"
+                    title="Acessar movimentações deste espaço"
+                    (click)="acessarDetalhesEspaco(item, $event)">
+                    ›
+                  </button>
+                </div>
+              </div>
+
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+  }
+
+  <!-- 4. PAINEL LATERAL / MODAL DE CRIAR ESPAÇO -->
+  @if (modalNovoEspacoAberto()) {
+    <div class="modal-backdrop drawer-backdrop" (click)="fecharModalNovoEspaco()">
+      <aside class="create-space-drawer" (click)="$event.stopPropagation()">
+
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Novo espaço</h2>
+            <p class="drawer-subtitle">Crie um espaço para organizar suas finanças.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalNovoEspaco()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="drawer-body">
+
+          <!-- Nome do Espaço -->
+          <div class="form-group">
+            <label class="form-label" for="inputNovoEspacoNome">Nome do espaço</label>
+            <input
+              id="inputNovoEspacoNome"
+              type="text"
+              maxlength="50"
+              class="input-pill"
+              [(ngModel)]="novoEspacoNome"
+              placeholder="Ex: Casa, Viagem, Família, Pessoal..."
+              autofocus
+              (keyup.enter)="salvarNovoEspaco()"
+            />
+            <div class="char-counter">{{ novoEspacoNome.length }}/50</div>
+          </div>
+
+          <!-- Tipo de Espaço -->
+          <div class="form-group">
+            <label class="form-label">Tipo de espaço</label>
+            <div class="radio-options-group">
+              <label
+                class="radio-option-card"
+                [class.selected]="novoEspacoTipo === 'individual'"
+                (click)="selecionarTipoNovoEspaco('individual')">
+                <span class="custom-radio" [class.checked]="novoEspacoTipo === 'individual'"></span>
+                <span class="radio-text"><strong>Individual</strong> — somente eu</span>
+              </label>
+
+              <label
+                class="radio-option-card"
+                [class.selected]="novoEspacoTipo === 'compartilhado'"
+                (click)="selecionarTipoNovoEspaco('compartilhado')">
+                <span class="custom-radio" [class.checked]="novoEspacoTipo === 'compartilhado'"></span>
+                <span class="radio-text"><strong>Compartilhado</strong> — com outras pessoas</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Ícone do Espaço (4 opções visuais: Grupo, Casa, Viagem, Pessoal) -->
+          <div class="form-group">
+            <label class="form-label">Ícone do espaço</label>
+            <div class="icon-cards-grid">
+              @for (ic of iconesDisponiveis; track ic.id) {
+                <button
+                  type="button"
+                  class="icon-visual-btn"
+                  [class.selected]="novoEspacoIcone === ic.id"
+                  (click)="selecionarIconeNovoEspaco(ic.id)">
+                  <div class="icon-preview-circle" [style.background-color]="novoEspacoIcone === ic.id ? novoEspacoCor : 'transparent'">
+                    @switch (ic.id) {
+                      @case ('casa') {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                      }
+                      @case ('viagem') {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                        </svg>
+                      }
+                      @case ('pessoal') {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      }
+                      @default {
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                      }
+                    }
+                  </div>
+                  <span class="icon-btn-label">{{ ic.label }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Cor de Identificação -->
+          <div class="form-group">
+            <label class="form-label">Cor de identificação</label>
+            <div class="color-swatches-grid">
+              @for (cor of coresDisponiveis; track cor) {
+                <button
+                  type="button"
+                  class="color-swatch-btn"
+                  [style.background-color]="cor"
+                  [class.selected]="novoEspacoCor === cor"
+                  (click)="selecionarCorNovoEspaco(cor)"
+                  [attr.aria-label]="'Selecionar cor ' + cor">
+                  @if (novoEspacoCor === cor) {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Convidar Participantes (Opcional) -->
+          @if (novoEspacoTipo === 'compartilhado') {
+            <div class="form-group">
+              <label class="form-label" for="inputEmailConviteNovo">E-mail para convite (opcional)</label>
+              <div class="invite-input-stack">
+                <input
+                  id="inputEmailConviteNovo"
+                  type="email"
+                  class="input-pill"
+                  [(ngModel)]="novoEspacoEmailConvite"
+                  placeholder="pessoa@email.com"
+                  (keyup.enter)="adicionarConvidadoLista()"
+                />
+                <button type="button" class="btn-add-guest" (click)="adicionarConvidadoLista()">
+                  + Adicionar participante
+                </button>
+              </div>
+
+              @if (novosConvidados().length > 0) {
+                <div class="guest-chips-list">
+                  @for (conv of novosConvidados(); track conv) {
+                    <span class="guest-chip">
+                      {{ conv }}
+                      <button type="button" class="remove-chip" (click)="removerConvidadoLista(conv)">✕</button>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (erroNovoEspaco()) {
+            <div class="form-error-banner">{{ erroNovoEspaco() }}</div>
+          }
+
+          <!-- Prévia do Espaço em Tempo Real -->
+          <div class="space-preview-box">
+            <span class="preview-header-label">PRÉVIA DO ESPAÇO</span>
+            <div class="preview-card-inner">
+              <div class="space-circle-icon" [style.background-color]="novoEspacoCor">
+                @switch (novoEspacoIcone) {
+                  @case ('casa') {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                      <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                  }
+                  @case ('viagem') {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                    </svg>
+                  }
+                  @case ('pessoal') {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  }
+                  @default {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                  }
+                }
+              </div>
+              <div class="preview-info">
+                <strong class="preview-name">{{ novoEspacoNome.trim() || 'Nome do espaço' }}</strong>
+                <span class="preview-type">
+                  {{ novoEspacoTipo === 'compartilhado' ? 'Espaço compartilhado' : 'Espaço individual' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="drawer-footer">
+          <button
+            type="button"
+            class="btn-criar-submit"
+            [disabled]="!novoEspacoNome.trim()"
+            (click)="salvarNovoEspaco()">
+            Criar espaço
+          </button>
+        </div>
+
+      </aside>
+    </div>
+  }
+
+  <!-- 5. DRAWER LATERAL: GERENCIAR ESPAÇO -->
+  @if (modalGerenciarAberto() && espacoSelecionado) {
+    <div class="modal-backdrop drawer-backdrop" (click)="fecharModalGerenciar()">
+      <aside class="create-space-drawer" (click)="$event.stopPropagation()">
+
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Gerenciar espaço</h2>
+            <p class="drawer-subtitle">Personalize o nome, ícone, cor e participantes deste espaço.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalGerenciar()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="drawer-body">
+
+          <!-- Nome do espaço -->
+          @if (!editandoNome()) {
+            <div class="space-name-row">
+              <div class="space-name-with-badge">
+                <span class="color-dot-indicator" [style.background-color]="espacoSelecionado.cor"></span>
+                <h3 class="modal-space-name">{{ espacoSelecionado.nome }}</h3>
+              </div>
+              <button type="button" class="btn-edit-name" (click)="iniciarEdicaoNome()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+                <span>Renomear</span>
+              </button>
+            </div>
+          } @else {
+            <div class="edit-name-box">
+              <label class="form-label" for="editarNomeInput">Nome do espaço</label>
+              <div class="edit-name-input-group">
+                <input
+                  id="editarNomeInput"
+                  type="text"
+                  class="input-pill"
+                  [(ngModel)]="nomeEditado"
+                  (keyup.enter)="salvarNomeEditado()"
+                  placeholder="Novo nome"
+                  autofocus
+                />
+                <button type="button" class="btn-pill-primary btn-save" (click)="salvarNomeEditado()">Salvar</button>
+                <button type="button" class="btn-pill-secondary btn-cancel" (click)="cancelarEdicaoNome()">Cancelar</button>
+              </div>
+              @if (erroEdicaoNome()) {
+                <span class="input-error-msg">{{ erroEdicaoNome() }}</span>
+              }
+            </div>
+          }
+
+          <p class="modal-space-type">{{ obterDescricaoTipo(espacoSelecionado) }}</p>
+
+          <!-- Alterar Ícone do Espaço -->
+          <div class="manage-color-section">
+            <span class="form-label">Ícone do espaço</span>
+            <div class="icon-cards-grid">
+              @for (ic of iconesDisponiveis; track ic.id) {
+                <button
+                  type="button"
+                  class="icon-visual-btn"
+                  [class.selected]="espacoSelecionado.icone === ic.id"
+                  (click)="alterarIconeNoGerenciar(ic.id)">
+                  <div class="icon-preview-circle" [style.background-color]="espacoSelecionado.icone === ic.id ? espacoSelecionado.cor : 'transparent'">
+                    @switch (ic.id) {
+                      @case ('casa') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                      }
+                      @case ('viagem') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                        </svg>
+                      }
+                      @case ('pessoal') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      }
+                      @default {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                      }
+                    }
+                  </div>
+                  <span class="icon-btn-label">{{ ic.label }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Alterar Cor do Espaço -->
+          <div class="manage-color-section">
+            <span class="form-label">Cor do espaço</span>
+            <div class="color-swatches-grid compact">
+              @for (cor of coresDisponiveis; track cor) {
+                <button
+                  type="button"
+                  class="color-swatch-btn sm"
+                  [style.background-color]="cor"
+                  [class.selected]="espacoSelecionado.cor === cor"
+                  (click)="alterarCorNoGerenciar(cor)">
+                  @if (espacoSelecionado.cor === cor) {
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Lista de Membros -->
+          <div class="members-list-section">
+            <span class="form-label">Participantes</span>
+            <div class="members-list">
+              @for (membro of espacoSelecionado.participantes; track membro.nome) {
+                <div class="member-entry">
+                  <div class="member-left">
+                    <div class="participant-avatar sm" [style.background-color]="membro.corAvatar">
+                      {{ membro.iniciais }}
+                    </div>
+                    <div class="member-info-texts">
+                      <span class="member-entry-name">{{ membro.nome }}</span>
+                      <span class="member-entry-role">
+                        {{ membro.papel === 'admin' ? 'Administrador' : 'Participante' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  @if (membro.papel !== 'admin') {
+                    <button type="button" class="btn-pill-danger-sm" (click)="solicitarRemocaoMembro(membro.nome)">
+                      Remover
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (modoConvidar()) {
+            <div class="invite-box">
+              <label class="form-label" for="conviteEmail">E-mail ou nome da pessoa a convidar</label>
+              <input
+                id="conviteEmail"
+                type="email"
+                placeholder="exemplo@email.com"
+                class="input-pill"
+                [(ngModel)]="emailConvite"
+                (keyup.enter)="enviarConvite()"
+              />
+              <div class="invite-actions">
+                <button type="button" class="btn-pill-primary" (click)="enviarConvite()">Adicionar participante</button>
+                <button type="button" class="btn-pill-secondary" (click)="cancelarConvidar()">Voltar</button>
+              </div>
+            </div>
+          }
+
+        </div>
+
+        <div class="drawer-footer">
+          @if (!modoConvidar()) {
+            <div class="modal-stack-actions">
+              <button type="button" class="btn-pill-primary" (click)="abrirConvidarPessoa()">
+                + Convidar participante
+              </button>
+              <button type="button" class="btn-pill-danger" (click)="solicitarExclusaoEspaco()">
+                Excluir espaço
+              </button>
+              <button type="button" class="btn-pill-secondary" (click)="fecharModalGerenciar()">
+                Fechar
+              </button>
+            </div>
+          }
+        </div>
+
+      </aside>
+    </div>
+  }
+
+  <!-- Modal Confirmação de Exclusão de Espaço -->
+  @if (modalConfirmarExclusaoAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalExclusao()">
+      <div class="modal-dialog modal-couplegraph modal-compact" (click)="$event.stopPropagation()">
+        <div class="modal-top-bar">
+          <h2 class="modal-main-title">Excluir espaço?</h2>
+          <button type="button" class="btn-close-icon" (click)="fecharModalExclusao()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="confirm-content">
+          <p class="confirm-question">Tem certeza que deseja excluir este espaço?</p>
+          <div class="confirm-target-box">
+            <h4 class="target-name">{{ espacoSelecionado?.nome }}</h4>
+            <p class="target-desc">{{ espacoSelecionado ? obterDescricaoTipo(espacoSelecionado) : '' }}</p>
+          </div>
+        </div>
+
+        <div class="confirm-actions-row">
+          <button type="button" class="btn-pill-secondary" (click)="cancelarExclusaoEspaco()">Cancelar</button>
+          <button type="button" class="btn-pill-danger-solid" (click)="confirmarExclusaoEspaco()">Excluir</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Sucesso de Exclusão -->
+  @if (modalSucessoExclusaoAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalSucessoExclusao()">
+      <div class="modal-dialog modal-couplegraph modal-compact modal-success" (click)="$event.stopPropagation()">
+        <div class="success-icon-wrap">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h2 class="modal-main-title text-center">Espaço excluído!</h2>
+        <p class="success-message">O espaço "{{ nomeEspacoExcluido() }}" foi removido com sucesso.</p>
+        <div class="modal-stack-actions">
+          <button type="button" class="btn-pill-primary" (click)="fecharModalSucessoExclusao()">Concluir</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Confirmação de Remoção de Membro -->
+  @if (modalConfirmarRemoverMembroAberto()) {
+    <div class="modal-backdrop" (click)="cancelarRemocaoMembro()">
+      <div class="modal-dialog modal-couplegraph modal-compact" (click)="$event.stopPropagation()">
+        <div class="modal-top-bar">
+          <h2 class="modal-main-title">Remover participante?</h2>
+          <button type="button" class="btn-close-icon" (click)="cancelarRemocaoMembro()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="confirm-content">
+          <p class="confirm-question">Deseja remover este participante do espaço?</p>
+          <div class="confirm-target-box">
+            <h4 class="target-name">{{ membroParaRemover() }}</h4>
+            <p class="target-desc">Participante do espaço</p>
+          </div>
+        </div>
+
+        <div class="confirm-actions-row">
+          <button type="button" class="btn-pill-secondary" (click)="cancelarRemocaoMembro()">Cancelar</button>
+          <button type="button" class="btn-pill-danger-solid" (click)="confirmarRemocaoMembro()">Remover</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Sucesso de Remoção de Membro -->
+  @if (modalSucessoRemoverMembroAberto()) {
+    <div class="modal-backdrop" (click)="fecharModalSucessoRemocaoMembro()">
+      <div class="modal-dialog modal-couplegraph modal-compact modal-success" (click)="$event.stopPropagation()">
+        <div class="success-icon-wrap">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h2 class="modal-main-title text-center">Participante removido!</h2>
+        <p class="success-message">O participante foi removido com sucesso.</p>
+        <div class="modal-stack-actions">
+          <button type="button" class="btn-pill-primary" (click)="fecharModalSucessoRemocaoMembro()">Concluir</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast Flutuante -->
+  @if (toastMensagem()) {
+    <div class="toast-feedback">
+      <span class="toast-check">✓</span>
+      <span>{{ toastMensagem() }}</span>
+    </div>
+  }
+
+</div>

@@ -5,8 +5,8 @@
 
 .category-card {
   background-color: var(--cg-branco-cards);
-  border: 2px solid var(--cg-verde-principal);
-  border-radius: 12px;
+  border: 1px solid var(--cg-borda);
+  border-radius: 14px;
   padding: 2rem 1.5rem;
   box-shadow: var(--cg-sombra-suave);
   height: 100%;
@@ -64,16 +64,27 @@
 }
 
 .cat-name {
-  width: 100px; 
+  width: 130px; 
   font-weight: 800;
   font-size: 0.95rem;
   color: var(--cg-texto-escuro-logo);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bar-track {
   flex: 1; 
   height: 16px;
   border-radius: 8px;
+  background-color: var(--cg-surface-secondary, #f1f5f9);
+  overflow: hidden;
+
+  :host-context([data-theme="dark"]) &,
+  :host-context(body.dark-theme) &,
+  body.dark-theme & {
+    background-color: var(--cg-border) !important;
+  }
 }
 
 .bar-fill {
@@ -83,7 +94,7 @@
 }
 
 .cat-value {
-  width: 60px; 
+  width: 70px; 
   text-align: right;
   font-weight: 800;
   font-size: 0.85rem;
@@ -92,8 +103,8 @@
 
 .empty-state {
   text-align: center;
-  padding: 2rem 0;
-  color: var(--cg-texto-secundario);
-  font-weight: 500;
-  font-style: italic;
+  padding: 3rem 1rem;
+  color: var(--cg-texto-escuro-logo);
+  font-weight: 700;
+  font-size: 1.05rem;
 }

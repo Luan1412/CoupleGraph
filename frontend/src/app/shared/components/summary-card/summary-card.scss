@@ -18,10 +18,6 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 1.5rem;
-
-  &.highlight-card {
-    border: 2px solid var(--cg-verde-principal);
-  }
 }
 
 .card-header {
@@ -31,20 +27,31 @@
 }
 
 .icon-wrapper {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 
   img {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
+    display: block;
   }
 
   &.bg-green-light { background-color: #dcfce7; }
   &.bg-red-light { background-color: #fee2e2; }
+  &.bg-blue-light { background-color: #e0f2fe; }
+
+  :host-context([data-theme="dark"]) &,
+  :host-context(body.dark-theme) &,
+  body.dark-theme & {
+    &.bg-green-light { background-color: rgba(34, 197, 94, 0.16); }
+    &.bg-red-light { background-color: rgba(239, 68, 68, 0.16); }
+    &.bg-blue-light { background-color: rgba(56, 130, 246, 0.16); }
+  }
 }
 
 .card-title {

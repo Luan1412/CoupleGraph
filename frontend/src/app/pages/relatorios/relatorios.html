@@ -1,0 +1,176 @@
+<div class="relatorios-container">
+  
+  <!-- Cabeçalho -->
+  <div class="header-section">
+    <h1 class="page-title">Relatórios</h1>
+    <p class="page-subtitle">Acompanhe sua vida financeira</p>
+  </div>
+
+  <!-- Card Filtro de Período com Calendário -->
+  <section class="periodo-card">
+    <div class="periodo-header">
+      <div class="periodo-title-wrap">
+        <svg class="calendar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <h3 class="periodo-title">Período de Análise</h3>
+      </div>
+
+      <!-- Atalhos de Período Rápidos -->
+      <div class="periodo-presets">
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'mes_atual'" (click)="aplicarPreset('mes_atual')">Este Mês</button>
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'ultimos_7'" (click)="aplicarPreset('ultimos_7')">Últimos 7 dias</button>
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'ultimos_30'" (click)="aplicarPreset('ultimos_30')">Últimos 30 dias</button>
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'personalizado'" (click)="presetAtivo.set('personalizado')">Personalizado</button>
+      </div>
+    </div>
+
+    <!-- Intervalo de Datas com Calendário -->
+    <div class="periodo-date-range">
+      <div class="date-input-group">
+        <label class="date-label" for="dataInicioInput">De</label>
+        <div class="date-input-wrap">
+          <input 
+            id="dataInicioInput"
+            type="date" 
+            class="input-date-pill" 
+            [ngModel]="dataInicio()" 
+            (ngModelChange)="onDataInicioChange($event)"
+          />
+        </div>
+      </div>
+
+      <div class="date-sep-arrow">→</div>
+
+      <div class="date-input-group">
+        <label class="date-label" for="dataFimInput">Até</label>
+        <div class="date-input-wrap">
+          <input 
+            id="dataFimInput"
+            type="date" 
+            class="input-date-pill" 
+            [ngModel]="dataFim()" 
+            (ngModelChange)="onDataFimChange($event)"
+          />
+        </div>
+      </div>
+
+      <button class="btn-filtrar" (click)="filtrarPeriodo()" [disabled]="carregando() || !!erroData()">
+        {{ carregando() ? 'Filtrando...' : 'Filtrar' }}
+      </button>
+    </div>
+
+    @if (erroData()) {
+      <div class="periodo-erro-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ erroData() }}</span>
+      </div>
+    } @else if (mensagemPeriodo()) {
+      <div class="periodo-feedback-tag">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>{{ mensagemPeriodo() }}</span>
+      </div>
+    }
+  </section>
+
+  <!-- Cards de Resumo -->
+  <div class="cards-grid">
+    <app-summary-card 
+      title="SALDO" 
+      [value]="saldo()" 
+      [icon]="saldoNegativo() ? '/icons/ic-saldo-negativo.svg' : '/icons/ic-saldo.svg'" 
+      [subtitle]="saldoSubtitulo()" 
+      [highlight]="true" 
+      [iconBgClass]="saldoNegativo() ? 'bg-red-light' : 'bg-green-light'">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="RECEITAS" 
+      [value]="receitas()" 
+      icon="/icons/ic-receitas.svg" 
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="DESPESAS" 
+      [value]="despesas()" 
+      icon="/icons/ic-despesas.svg" 
+      [highlight]="true" 
+      iconBgClass="bg-red-light">
+    </app-summary-card>
+  </div>
+
+  <!-- Grid Central: Gastos por Categoria & Receitas x Despesas -->
+  <div class="middle-grid">
+    
+    <!-- Gastos por Categoria -->
+    <app-category-expenses
+      titulo="Gastos por categoria"
+      [total]="totalGastosCategoria()"
+      [itens]="categoriasGastos()">
+    </app-category-expenses>
+
+    <!-- Gráfico Receitas x Despesas -->
+    <section class="chart-card">
+      <div class="chart-header-row">
+        <h3 class="chart-title">Receitas x Despesas</h3>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot dot-receita"></span> Receitas</span>
+          <span class="legend-item"><span class="legend-dot dot-despesa"></span> Despesas</span>
+        </div>
+      </div>
+
+      <div class="chart-body">
+        <div class="bars-container">
+          @for (semana of dadosSemanas(); track semana.rotulo) {
+            <div class="week-group">
+              <div class="bars-pair">
+                @for (barra of semana.barras; track barra.cor + barra.valor) {
+                  <div class="bar-col-wrapper" [title]="barra.legenda">
+                    <div 
+                      class="bar-fill" 
+                      [style.height.%]="barra.valor" 
+                      [style.background-color]="barra.cor">
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Rótulos das Semanas -->
+        <div class="week-labels-pill">
+          @for (semana of dadosSemanas(); track semana.rotulo) {
+            <span class="week-label-item">{{ semana.rotulo }}</span>
+          }
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Card Inferior: Resumo do Período -->
+  <section class="resumo-periodo-card">
+    <h3 class="resumo-title">Resumo do período</h3>
+    <div class="resumo-content">
+      <p class="resumo-item">
+        <strong>Total de movimentações:</strong> {{ totalMovimentacoes() }}
+      </p>
+      <p class="resumo-item">
+        <strong>Média de gastos por movimentação:</strong> {{ mediaGastos() }}
+      </p>
+    </div>
+  </section>
+
+</div>

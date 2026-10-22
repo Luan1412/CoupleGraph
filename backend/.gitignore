@@ -4,6 +4,8 @@ env/
 
 # Variáveis de Ambiente 
 .env
+.env.*
+*.env
 
 # Cache do Python
 __pycache__/

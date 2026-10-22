@@ -1,0 +1,95 @@
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, DateTime, Enum, UniqueConstraint
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+import enum
+from app.core.database import Base 
+
+class PapelUsuario(str, enum.Enum):
+    ADMIN = "administrador"
+    MEMBRO = "participante"
+
+class TipoMovimentacao(str, enum.Enum):
+    RECEITA = "receita"
+    DESPESA = "despesa"
+
+class StatusConvite(str, enum.Enum):
+    PENDENTE = "pendente"
+    ACEITO = "aceito"
+    RECUSADO = "recusado"
+
+class Espaco(Base):
+    __tablename__ = "espacos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(100), nullable=False)
+    criado_por = Column(Integer, ForeignKey("usuarios.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    criador = relationship("Usuario", foreign_keys=[criado_por])
+    membros = relationship("EspacoUsuario", back_populates="espaco")
+    movimentacoes = relationship("Movimentacao", back_populates="espaco")
+    convites = relationship("Convite", back_populates="espaco")
+
+    @property
+    def total_membros(self) -> int:
+        return len(self.membros) if self.membros else 1
+
+    @property
+    def saldo(self) -> float:
+        if not self.movimentacoes:
+            return 0.0
+        rec = sum(float(m.valor) for m in self.movimentacoes if m.tipo == TipoMovimentacao.RECEITA)
+        desp = sum(float(m.valor) for m in self.movimentacoes if m.tipo == TipoMovimentacao.DESPESA)
+        return rec - desp
+
+    @property
+    def despesas(self) -> float:
+        if not self.movimentacoes:
+            return 0.0
+        return sum(float(m.valor) for m in self.movimentacoes if m.tipo == TipoMovimentacao.DESPESA)
+
+
+class EspacoUsuario(Base):
+    __tablename__ = "espaco_usuarios"
+    __table_args__ = (UniqueConstraint("espaco_id", "usuario_id", name="uq_espaco_usuario"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    espaco_id = Column(Integer, ForeignKey("espacos.id"))
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    papel = Column(Enum(PapelUsuario), default=PapelUsuario.MEMBRO)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    espaco = relationship("Espaco", back_populates="membros")
+    usuario = relationship("Usuario")
+
+
+class Movimentacao(Base):
+    __tablename__ = "movimentacoes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    espaco_id = Column(Integer, ForeignKey("espacos.id"))
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    tipo = Column(Enum(TipoMovimentacao), nullable=False)
+    descricao = Column(String(255), nullable=True)
+    valor = Column(Numeric(12, 2), nullable=False)
+    categoria = Column(String(100), nullable=False)
+    data = Column(DateTime(timezone=True), default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    espaco = relationship("Espaco", back_populates="movimentacoes")
+    usuario = relationship("Usuario")
+
+
+class Convite(Base):
+    __tablename__ = "convites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    espaco_id = Column(Integer, ForeignKey("espacos.id"))
+    email = Column(String(255), nullable=False)
+    convidado_por = Column(Integer, ForeignKey("usuarios.id"))
+    status = Column(Enum(StatusConvite), default=StatusConvite.PENDENTE)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    espaco = relationship("Espaco", back_populates="convites")

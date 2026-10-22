@@ -21,10 +21,32 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+from datetime import datetime
+from typing import Optional
+
 class UsuarioResponse(BaseModel):
     id: int
     nome: str
     email: str
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+class UsuarioUpdate(BaseModel):
+    nome: str
+
+class AlterarSenhaSchema(BaseModel):
+    senha_atual: str
+    nova_senha: str
+
+    @field_validator('nova_senha')
+    @classmethod
+    def validar_nova_senha(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('A nova senha deve ter pelo menos 8 caracteres.')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('A nova senha deve ter pelo menos uma letra maiúscula.')
+        if not re.search(r'\d', v):
+            raise ValueError('A nova senha deve ter pelo menos um número.')
+        return v

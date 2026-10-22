@@ -37,6 +37,18 @@
     color: var(--cg-texto-escuro-logo);
   }
 
+  :host-context([data-theme="dark"]) &,
+  :host-context(body.dark-theme) &,
+  body.dark-theme & {
+    .menu-btn img {
+      filter: invert(1);
+    }
+
+    .mobile-logo .logo-img {
+      filter: brightness(0) invert(1);
+    }
+  }
+
   
   @media (max-width: 768px) {
     padding: 0 1.5rem; 

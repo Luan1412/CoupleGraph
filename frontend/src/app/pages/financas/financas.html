@@ -1,0 +1,395 @@
+<div class="financas-container">
+  
+  <!-- Cabeçalho -->
+  <div class="header-section">
+    <div class="header-titles">
+      <h1 class="page-title">Finanças</h1>
+      <p class="page-subtitle">Acompanhe seu saldo, controle de gastos e orçamentos</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-action-outline" (click)="irParaEspacos()">Gerenciar espaços</button>
+      <button class="btn-action-primary" (click)="irParaMovimentacoes()">+ Nova movimentação</button>
+    </div>
+  </div>
+
+  <!-- Card de Filtros (Espaço & Período) -->
+  <section class="card-filtro-box">
+    <div class="filtro-header">
+      <div class="filtro-header-title">
+        <svg class="calendar-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span>Filtrar por período</span>
+      </div>
+
+      <!-- Presets de Período -->
+      <div class="periodo-presets">
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'mes_atual'" (click)="aplicarPreset('mes_atual')">Este Mês</button>
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'ultimos_7'" (click)="aplicarPreset('ultimos_7')">Últimos 7 dias</button>
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'ultimos_30'" (click)="aplicarPreset('ultimos_30')">Últimos 30 dias</button>
+        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'personalizado'" (click)="presetAtivo.set('personalizado')">Personalizado</button>
+      </div>
+    </div>
+
+    <div class="filtros-grid">
+      
+      <!-- Seletor de Espaço -->
+      <div class="filtro-group filtro-espaco">
+        <label class="filtro-label" for="selectEspaco">Espaço</label>
+        <div class="select-pill-wrapper">
+          <select 
+            id="selectEspaco" 
+            class="select-pill" 
+            [ngModel]="espacoSelecionadoId()" 
+            (ngModelChange)="onEspacoChange($event)">
+            <option value="todos">Todos os espaços</option>
+            @for (esp of listaEspacos(); track esp.espaco.id) {
+              <option [value]="esp.espaco.id.toString()">{{ esp.espaco.nome }}</option>
+            }
+          </select>
+          <span class="select-arrow">▼</span>
+        </div>
+      </div>
+
+      <!-- Data De -->
+      <div class="filtro-group filtro-data">
+        <label class="filtro-label" for="dataInicioInput">De</label>
+        <div class="date-input-wrap">
+          <input 
+            id="dataInicioInput" 
+            type="date" 
+            class="select-pill input-date-pill" 
+            [ngModel]="dataInicio()" 
+            (ngModelChange)="onDataInicioChange($event)"
+          />
+        </div>
+      </div>
+
+      <div class="date-sep-arrow">→</div>
+
+      <!-- Data Até -->
+      <div class="filtro-group filtro-data">
+        <label class="filtro-label" for="dataFimInput">Até</label>
+        <div class="date-input-wrap">
+          <input 
+            id="dataFimInput" 
+            type="date" 
+            class="select-pill input-date-pill" 
+            [ngModel]="dataFim()" 
+            (ngModelChange)="onDataFimChange($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Botão Aplicar -->
+      <div class="filtro-action">
+        <button class="btn-aplicar-filtro" (click)="aplicarFiltros()" [disabled]="carregandoFiltro() || !!erroData()">
+          {{ carregandoFiltro() ? 'Filtrando...' : 'Aplicar filtro' }}
+        </button>
+      </div>
+
+    </div>
+
+    @if (erroData()) {
+      <div class="periodo-erro-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ erroData() }}</span>
+      </div>
+    } @else if (mensagemPeriodo()) {
+      <div class="periodo-feedback-tag">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>{{ mensagemPeriodo() }}</span>
+      </div>
+    }
+  </section>
+
+  <!-- Cards de Indicadores Financeiros -->
+  <div class="cards-grid">
+    <app-summary-card 
+      title="SALDO DISPONÍVEL" 
+      [value]="formatarMoeda(saldoDisponivel())" 
+      [icon]="saldoDisponivel() >= 0 ? '/icons/ic-saldo.svg' : '/icons/ic-saldo-negativo.svg'" 
+      subtitle="Saldo acumulado" 
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="RECEITAS" 
+      [value]="formatarMoeda(totalReceitas())" 
+      icon="/icons/ic-receitas.svg" 
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="DESPESAS" 
+      [value]="formatarMoeda(totalDespesas())" 
+      icon="/icons/ic-despesas.svg" 
+      [highlight]="true" 
+      iconBgClass="bg-red-light">
+    </app-summary-card>
+
+    <app-summary-card 
+      title="ECONOMIA DO MÊS" 
+      [value]="taxaEconomia() + '%'" 
+      icon="/icons/ic-economia.svg" 
+      subtitle="Taxa poupada do total" 
+      [highlight]="true" 
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+  </div>
+
+  <!-- Grid Principal: Orçamentos & Balanço por Espaço -->
+  <div class="middle-grid">
+    
+    <!-- Orçamento por Categoria -->
+    <section class="card-box orcamento-box">
+      <div class="box-header">
+        <div class="box-title-group">
+          <h2 class="box-title">Orçamento por categoria</h2>
+          <span class="budget-badge">{{ percentualGeralOrcamento() }}% utilizado</span>
+        </div>
+        <button class="btn-ajustar-orcamento" (click)="abrirModalOrcamento()" title="Configurar limites de orçamento">
+          <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+          <span>Ajustar limites</span>
+        </button>
+      </div>
+
+      <div class="budget-summary-bar">
+        <div class="budget-progress-track">
+          <div class="budget-progress-fill" [style.width.%]="percentualGeralOrcamento()"></div>
+        </div>
+        <div class="budget-summary-values">
+          <span>Gasto: <strong>{{ formatarMoeda(totalGastoOrcamento()) }}</strong></span>
+          <span>Limite: <strong>{{ formatarMoeda(totalPlanejado()) }}</strong></span>
+        </div>
+      </div>
+
+      <div class="orcamentos-list">
+        @for (item of orcamentos(); track item.nome) {
+          <div class="orcamento-item">
+            <div class="orcamento-info">
+              <span class="cat-label">{{ item.nome }}</span>
+              <span class="cat-values">
+                <strong>{{ formatarMoeda(item.gasto) }}</strong> de {{ formatarMoeda(item.limite) }}
+              </span>
+            </div>
+
+            <div class="bar-track">
+              <div 
+                class="bar-fill" 
+                [style.width.%]="calcularPorcentagem(item.gasto, item.limite)"
+                [style.background-color]="item.cor">
+              </div>
+            </div>
+
+            <div class="orcamento-footer">
+              <span class="pct-text">{{ calcularPorcentagem(item.gasto, item.limite) }}% utilizado</span>
+              <span class="remaining-text">Resta {{ formatarMoeda(item.limite - item.gasto) }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Balanço por Espaço -->
+    <section class="card-box balanco-box">
+      <div class="box-header">
+        <h2 class="box-title">Divisão por espaço</h2>
+        <button class="btn-gerenciar-espacos" (click)="irParaEspacos()" title="Gerenciar espaços">
+          <svg class="btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          <span>Gerenciar</span>
+        </button>
+      </div>
+
+      <div class="spaces-breakdown-list">
+        @if (carregando()) {
+          <div class="loading-state">
+            <p>Carregando balanços...</p>
+          </div>
+        } @else if (balancoEspacos().length === 0) {
+          <div class="empty-state">
+            <p>Nenhum espaço encontrado.</p>
+            <button class="btn-action-primary" (click)="irParaEspacos()">Criar primeiro espaço</button>
+          </div>
+        } @else {
+          @for (esp of balancoEspacos(); track esp.id) {
+            <div class="space-balance-card">
+              <div class="space-balance-header">
+                <div>
+                  <h3 class="space-title">{{ esp.nome }}</h3>
+                  <span class="space-subtitle">{{ esp.tipo }}</span>
+                </div>
+                <div class="space-saldo-badge" [class.negative]="esp.saldo < 0">
+                  <span class="saldo-label">Saldo</span>
+                  <span class="saldo-val">{{ formatarMoeda(esp.saldo) }}</span>
+                </div>
+              </div>
+
+              <div class="space-balance-metrics">
+                <span class="metric-item">
+                  <strong class="color-income">Entradas:</strong> {{ formatarMoeda(esp.receitas) }}
+                </span>
+                <span class="metric-item">
+                  <strong class="color-expense">Saídas:</strong> {{ formatarMoeda(esp.despesas) }}
+                </span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Card Dica Financeira Inteligente & Universal -->
+  <section class="card-insight">
+    <div class="insight-icon-box">
+      <svg class="insight-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        <circle cx="12" cy="12" r="4"/>
+      </svg>
+    </div>
+    <div class="insight-text">
+      <h4 class="insight-title">{{ insightTitulo() }}</h4>
+      <p class="insight-desc">{{ insightDescricao() }}</p>
+    </div>
+  </section>
+
+  <!-- Drawer Lateral: Limites de Orçamento -->
+  @if (modalOrcamentoAberto()) {
+    <div class="modal-backdrop drawer-backdrop" (click)="fecharModalOrcamento()">
+      <aside class="side-drawer" (click)="$event.stopPropagation()">
+        
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Limites de orçamento</h2>
+            <p class="drawer-subtitle">Defina o teto mensal de gastos ou adicione novas categorias.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalOrcamento()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="drawer-body">
+
+          <!-- Seção: Teto Geral de Orçamento -->
+          <div class="new-category-box teto-geral-box">
+            <div class="teto-geral-header">
+              <div>
+                <h4 class="new-cat-title">Teto geral de orçamento mensal</h4>
+                <p class="teto-geral-desc">
+                  Defina um valor fixo geral ou deixe em branco para usar a soma das categorias ({{ formatarMoeda(somaCategoriasEdicao()) }}).
+                </p>
+              </div>
+              @if (tetoGeralEdicao !== null && tetoGeralEdicao > 0) {
+                <button type="button" class="btn-auto-soma" (click)="usarSomaCategoriasNoTeto()">
+                  Usar soma automática
+                </button>
+              }
+            </div>
+
+            <div class="new-cat-num-wrap">
+              <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+              <input
+                type="number"
+                min="0"
+                class="input-pill new-cat-limit"
+                [(ngModel)]="tetoGeralEdicao"
+                [placeholder]="'Automático (' + formatarMoeda(somaCategoriasEdicao()) + ')'"
+              />
+            </div>
+          </div>
+
+          <!-- Seção Adicionar Nova Categoria -->
+          <div class="new-category-box">
+            <h4 class="new-cat-title">+ Adicionar categoria</h4>
+            <div class="new-cat-inputs">
+              <input 
+                type="text" 
+                class="input-pill new-cat-name" 
+                [(ngModel)]="novaCategoriaNome"
+                placeholder="Nome (ex: Saúde, Pets...)"
+                (keyup.enter)="adicionarCategoriaNaEdicao()"
+              />
+              <div class="new-cat-num-wrap">
+                <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+                <input 
+                  type="number" 
+                  min="0"
+                  class="input-pill new-cat-limit" 
+                  [(ngModel)]="novaCategoriaLimite"
+                  placeholder="Limite (0,00)"
+                  (keyup.enter)="adicionarCategoriaNaEdicao()"
+                />
+              </div>
+              <button type="button" class="btn-add-cat" (click)="adicionarCategoriaNaEdicao()">
+                + Adicionar categoria
+              </button>
+            </div>
+            @if (erroModalOrcamento()) {
+              <span class="input-error-msg">{{ erroModalOrcamento() }}</span>
+            }
+          </div>
+
+          <!-- Lista de Categorias com Edição de Limite -->
+          <div class="form-group">
+            <span class="form-label">Categorias e limites mensais</span>
+            <div class="categories-edit-list">
+              @for (cat of categoriasEdicao(); track cat.id ?? cat.nome) {
+                <div class="category-edit-row">
+                  <div class="cat-label-wrap">
+                    <span class="cat-color-dot" [style.background-color]="cat.cor"></span>
+                    <span class="cat-name-text">{{ cat.nome }}</span>
+                  </div>
+
+                  <div class="cat-input-wrap">
+                    <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+                    <input 
+                      type="number" 
+                      min="0"
+                      class="input-pill-num"
+                      [(ngModel)]="cat.limite"
+                      placeholder="0"
+                    />
+                    <button type="button" class="btn-remove-cat" (click)="removerCategoriaNaEdicao(cat.id ?? cat.nome)" title="Excluir categoria">✕</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Rodapé do Drawer -->
+        <div class="drawer-footer">
+          <button type="button" class="btn-drawer-submit" (click)="salvarModalOrcamento()">Salvar orçamentos</button>
+          <button type="button" class="btn-drawer-cancel" (click)="fecharModalOrcamento()">Cancelar</button>
+        </div>
+
+      </aside>
+    </div>
+  }
+
+</div>
