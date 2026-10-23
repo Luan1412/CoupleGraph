@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Auth, UsuarioPerfil } from '../../core/services/auth';
 import { ThemeService, TemaTipo } from '../../core/services/theme';
 
@@ -16,6 +16,7 @@ export class Configuracoes implements OnInit {
   authService = inject(Auth);
   themeService = inject(ThemeService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
 
   // Aba ativa
@@ -43,6 +44,13 @@ export class Configuracoes implements OnInit {
   mostrarNovaSenha = false;
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe((params) => {
+      const aba = params.get('aba');
+      if (aba === 'perfil' || aba === 'seguranca' || aba === 'preferencias' || aba === 'conta') {
+        this.trocarAba(aba);
+      }
+    });
+
     const u = this.authService.usuarioAtual();
     if (u) {
       this.preencherDados(u);

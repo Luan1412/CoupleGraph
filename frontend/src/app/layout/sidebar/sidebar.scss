@@ -236,6 +236,17 @@ body.dark-theme .space-dropdown-item {
   }
 }
 
+.space-dropdown-divider {
+  height: 1px;
+  background-color: #E2E8F0;
+  margin: 0.25rem 0.2rem;
+}
+
+:host-context([data-theme="dark"]) .space-dropdown-divider,
+:host-context(body.dark-theme) .space-dropdown-divider {
+  background-color: #24324A;
+}
+
 .space-dropdown-manage {
   margin-top: 0.2rem;
   padding: 0.45rem 0.65rem;

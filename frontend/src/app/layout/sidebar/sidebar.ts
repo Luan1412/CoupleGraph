@@ -51,7 +51,24 @@ export class Sidebar implements OnInit {
     const lista = this.espacos();
     if (lista.length === 0) return null;
     const idAtivo = this.espacoService.espacoAtivoId();
-    return lista.find(e => e.id === idAtivo) || lista[0];
+    if (idAtivo === null || idAtivo === 0) {
+      return {
+        id: 0,
+        nome: 'Todos os espaços',
+        tipo: 'compartilhado',
+        cor: '#22C55E',
+        icone: 'casal',
+        numParticipantes: lista.length
+      };
+    }
+    return lista.find(e => e.id === idAtivo) || {
+      id: 0,
+      nome: 'Todos os espaços',
+      tipo: 'compartilhado',
+      cor: '#22C55E',
+      icone: 'casal',
+      numParticipantes: lista.length
+    };
   });
 
   constructor() {
@@ -82,15 +99,15 @@ export class Sidebar implements OnInit {
           const meta = metaMap[id] || {};
           const padrao = this.inferirVisualPorNome(nome, idx);
 
-          let corEspaco: string = meta.cor || padrao.cor;
-          if (!meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
+          let corEspaco: string = item.espaco.cor || meta.cor || padrao.cor;
+          if (!item.espaco.cor && !meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
             const alternativa = this.coresPadrao.find(c => !coresUsadas.has(c.toUpperCase()));
             corEspaco = alternativa || this.coresPadrao[idx % this.coresPadrao.length];
           }
           coresUsadas.add(corEspaco.toUpperCase());
 
-          const extrasCount = Array.isArray(meta.participantesExtras) ? meta.participantesExtras.length : 0;
-          const totalMembros = Math.max(item.espaco.total_membros || 1, 1 + extrasCount);
+          const membrosApiCount = item.espaco.membros_detalhes?.length || 0;
+          const totalMembros = Math.max(item.espaco.total_membros || 1, membrosApiCount);
           const tipo: 'compartilhado' | 'individual' =
             meta.tipo || (totalMembros > 1 ? 'compartilhado' : 'individual');
 
@@ -99,7 +116,7 @@ export class Sidebar implements OnInit {
             nome,
             tipo,
             cor: corEspaco,
-            icone: meta.icone || padrao.icone,
+            icone: (item.espaco.icone as IconeEspacoSidebar) || meta.icone || padrao.icone,
             numParticipantes: tipo === 'individual' ? 1 : Math.max(2, totalMembros)
           };
         });
@@ -107,8 +124,8 @@ export class Sidebar implements OnInit {
         this.espacos.set(mapeados);
         if (mapeados.length > 0) {
           const atual = this.espacoService.espacoAtivoId();
-          if (!atual || !mapeados.some(e => e.id === atual)) {
-            this.espacoService.definirEspacoAtivoId(mapeados[0].id);
+          if (atual !== null && !mapeados.some(e => e.id === atual)) {
+            this.espacoService.definirEspacoAtivoId(null);
           }
         }
       },
@@ -151,6 +168,11 @@ export class Sidebar implements OnInit {
 
   selecionarEspaco(espaco: EspacoResumoSidebar): void {
     this.espacoService.definirEspacoAtivoId(espaco.id);
+    this.dropdownAberto.set(false);
+  }
+
+  selecionarTodosEspacos(): void {
+    this.espacoService.definirEspacoAtivoId(null);
     this.dropdownAberto.set(false);
   }
 

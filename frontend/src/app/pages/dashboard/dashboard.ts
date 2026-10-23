@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeDetectorRef, PLATFORM_ID, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { SummaryCard } from '../../shared/components/summary-card/summary-card';
-import { EspacoService } from '../../core/services/espaco';
+import { EspacoService, OrcamentoEspacoModel, OrcamentoEspacoUpdate } from '../../core/services/espaco';
 import { MovimentacaoService, MovimentacaoItem } from '../../core/services/movimentacao';
 import { CategoriaService } from '../../core/services/categoria';
 import { ThemeService } from '../../core/services/theme';
@@ -27,6 +28,15 @@ export interface ItemDistribuicao {
   valor: number;
   percentual: number;
   cor: string;
+}
+
+export interface ResumoSemanalInfo {
+  periodoLabel: string;
+  totalReceitas: number;
+  totalDespesas: number;
+  balanco: number;
+  totalMovimentacoes: number;
+  topCategorias: ItemDistribuicao[];
 }
 
 const STORAGE_META_KEY = 'couplegraph_espacos_meta_real_v1';
@@ -163,17 +173,143 @@ export class Dashboard implements OnInit {
     return this.itensDistribuicaoAtiva().reduce((acc, item) => acc + item.valor, 0);
   });
 
-  // Resumo de Orçamento
-  totalPlanejadoOrcamento = computed<number>(() => this.categoriaService.totalPlanejado());
-  tetoGeralManualAtivo = computed<number | null>(() => this.categoriaService.tetoGeralManual());
+  // Resumo Financeiro Semanal (Calculado para a semana corrente)
+  resumoSemanalDados = computed<ResumoSemanalInfo>(() => {
+    const movs = this.movimentacoesFiltradas();
+    
+    const hoje = new Date();
+    let refDate = hoje;
+    if (hoje.getFullYear() < 2026) {
+      refDate = new Date('2026-10-22T12:00:00');
+    }
+
+    const day = refDate.getDay();
+    const diffParaSegunda = day === 0 ? -6 : 1 - day;
+    
+    const inicioSemana = new Date(refDate);
+    inicioSemana.setDate(refDate.getDate() + diffParaSegunda);
+    inicioSemana.setHours(0, 0, 0, 0);
+
+    const fimSemana = new Date(inicioSemana);
+    fimSemana.setDate(inicioSemana.getDate() + 6);
+    fimSemana.setHours(23, 59, 59, 999);
+
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const diaIni = inicioSemana.getDate().toString().padStart(2, '0');
+    const mesIni = meses[inicioSemana.getMonth()];
+    const diaFim = fimSemana.getDate().toString().padStart(2, '0');
+    const mesFim = meses[fimSemana.getMonth()];
+    const anoFim = fimSemana.getFullYear();
+    const periodoLabel = mesIni === mesFim
+      ? `${diaIni} a ${diaFim} de ${mesIni}, ${anoFim}`
+      : `${diaIni} de ${mesIni} a ${diaFim} de ${mesFim}, ${anoFim}`;
+
+    const movsSemana = movs.filter(m => {
+      if (!m.data) return false;
+      const partes = m.data.split('T')[0].split('-');
+      if (partes.length === 3) {
+        const d = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0);
+        return d >= inicioSemana && d <= fimSemana;
+      }
+      const d = new Date(m.data);
+      return !isNaN(d.getTime()) && d >= inicioSemana && d <= fimSemana;
+    });
+
+    let recTotal = 0;
+    let despTotal = 0;
+    const catMap = new Map<string, number>();
+
+    movsSemana.forEach(m => {
+      const v = m.valor || 0;
+      if (m.tipo === 'receita') {
+        recTotal += v;
+      } else if (m.tipo === 'despesa') {
+        despTotal += v;
+        const cat = (m.categoria || 'Outros').trim();
+        catMap.set(cat, (catMap.get(cat) || 0) + v);
+      }
+    });
+
+    const topCategorias: ItemDistribuicao[] = [];
+    let idx = 0;
+    catMap.forEach((valor, nome) => {
+      topCategorias.push({
+        nome,
+        valor,
+        percentual: despTotal > 0 ? Math.round((valor / despTotal) * 100) : 0,
+        cor: this.obterCorCategoria(nome, idx++)
+      });
+    });
+
+    topCategorias.sort((a, b) => b.valor - a.valor);
+
+    return {
+      periodoLabel,
+      totalReceitas: recTotal,
+      totalDespesas: despTotal,
+      balanco: recTotal - despTotal,
+      totalMovimentacoes: movsSemana.length,
+      topCategorias: topCategorias.slice(0, 4)
+    };
+  });
+
+  // Resumo de Orçamento por Espaço Selecionado ou Consolidado
+  espacoAtivoIdNumero = computed<number | null>(() => {
+    const f = this.espacoFiltro();
+    return f !== 'todos' ? Number(f) : null;
+  });
+
+  orcamentoEspacoSelecionado = computed<OrcamentoEspacoModel | null>(() => {
+    const id = this.espacoAtivoIdNumero();
+    if (!id) return null;
+    return this.espacoService.orcamentosPorEspaco().get(id) || null;
+  });
+
+  totalPlanejadoOrcamento = computed<number>(() => {
+    const _versao = this.espacoService.versaoEspacos();
+    const id = this.espacoAtivoIdNumero();
+    if (id !== null) {
+      return this.espacoService.obterTetoEspaco(id);
+    }
+
+    const espacos = this.todosEspacos();
+    let soma = 0;
+    for (const esp of espacos) {
+      soma += this.espacoService.obterTetoEspaco(esp.id);
+    }
+
+    if (soma === 0) {
+      soma = this.categoriaService.totalPlanejado();
+    }
+    return soma;
+  });
+
+  tetoGeralManualAtivo = computed<number | null>(() => {
+    const id = this.espacoAtivoIdNumero();
+    if (id !== null) {
+      const orc = this.orcamentoEspacoSelecionado();
+      return orc?.teto_geral ? Number(orc.teto_geral) : null;
+    }
+    return this.categoriaService.tetoGeralManual();
+  });
+
   percentualOrcamentoUsado = computed<number>(() => {
     const planejado = this.totalPlanejadoOrcamento();
     if (planejado <= 0) return 0;
     return Math.min(100, Math.round((this.despesasTotais() / planejado) * 100));
   });
 
+  ehAdminDoEspacoSelecionado = computed<boolean>(() => {
+    const id = this.espacoAtivoIdNumero();
+    if (id === null) return true;
+    const orc = this.orcamentoEspacoSelecionado();
+    return orc?.pode_editar ?? true;
+  });
+
   // Estado do Drawer Lateral de Teto de Orçamento no Início
   modalOrcamentoAberto = signal<boolean>(false);
+  espacoIdEdicaoOrcamento = signal<number | null>(null);
+  salvandoOrcamento = signal<boolean>(false);
   tetoGeralEdicao: number | null = null;
   categoriasEdicao = signal<any[]>([]);
   novaCategoriaNome = '';
@@ -215,7 +351,35 @@ export class Dashboard implements OnInit {
   dropdownCategoriaAberto = signal<boolean>(false);
   termoBuscaCategoria = signal<string>('');
 
-  categoriasDisponiveis = computed(() => this.categoriaService.categorias());
+  categoriasDisponiveis = computed(() => {
+    const pessoais = this.categoriaService.categorias();
+    const map = new Map<string, { id?: string; nome: string; limite: number; gasto: number; cor: string }>();
+
+    pessoais.forEach(c => {
+      map.set(c.nome.toLowerCase().trim(), {
+        ...c,
+        cor: this.categoriaService.obterCor(c.nome)
+      });
+    });
+
+    const movs = this.todasMovimentacoes();
+    movs.forEach((m: MovimentacaoItem) => {
+      if (m.categoria && m.categoria.trim()) {
+        const chave = m.categoria.toLowerCase().trim();
+        if (!map.has(chave)) {
+          map.set(chave, {
+            id: 'mov-' + chave,
+            nome: m.categoria.trim(),
+            limite: 0,
+            gasto: 0,
+            cor: this.categoriaService.obterCor(m.categoria, m.espaco_id)
+          });
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  });
   categoriasFiltradas = computed(() => {
     const termo = this.termoBuscaCategoria().toLowerCase().trim();
     const todas = this.categoriasDisponiveis();
@@ -230,7 +394,43 @@ export class Dashboard implements OnInit {
     return esp ? esp.nome : 'Todos os espaços';
   });
 
+  corEspacoFiltrado = computed<string | null>(() => {
+    const filtro = this.espacoFiltro();
+    if (!filtro || filtro === 'todos') return null;
+    const esp = this.todosEspacos().find(e => e.id === Number(filtro));
+    return esp ? esp.cor : null;
+  });
+
+  dropdownEspacoHeroAberto = signal<boolean>(false);
+
+  toggleDropdownEspacoHero(event: MouseEvent): void {
+    event.stopPropagation();
+    this.dropdownEspacoHeroAberto.update(v => !v);
+  }
+
+  selecionarEspacoHero(valor: string, event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+    this.onEspacoFiltroChange(valor);
+    this.dropdownEspacoHeroAberto.set(false);
+  }
+
+  @HostListener('document:click')
+  onDocumentClickFecharDropdown(): void {
+    if (this.dropdownEspacoHeroAberto()) {
+      this.dropdownEspacoHeroAberto.set(false);
+    }
+  }
+
   constructor() {
+    effect(() => {
+      this.espacoService.versaoEspacos();
+      if (this.inicializado) {
+        untracked(() => {
+          this.carregarDadosDashboard();
+        });
+      }
+    });
+
     effect(() => {
       const idAtivo = this.espacoService.espacoAtivoId();
       const tick = this.espacoService.selecaoEspacoTick();
@@ -246,6 +446,8 @@ export class Dashboard implements OnInit {
       untracked(() => {
         if (idAtivo) {
           this.espacoFiltro.set(String(idAtivo));
+        } else {
+          this.espacoFiltro.set('todos');
         }
       });
     });
@@ -263,6 +465,9 @@ export class Dashboard implements OnInit {
 
     this.espacoService.listarMeusEspacos().subscribe({
       next: (espacosDados) => {
+        const ids = (espacosDados || []).map(item => item.espaco.id);
+        this.espacoService.carregarOrcamentosDeEspacos(ids);
+
         this.movimentacaoService.listar().subscribe({
           next: (movs) => {
             const listaMovs = movs || [];
@@ -275,15 +480,15 @@ export class Dashboard implements OnInit {
               const meta = metaMap[id] || {};
               const padrao = this.inferirVisualPorNome(nome, idx);
 
-              let corEspaco: string = meta.cor || padrao.cor;
-              if (!meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
+              let corEspaco: string = item.espaco.cor || meta.cor || padrao.cor;
+              if (!item.espaco.cor && !meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
                 const alternativa = this.CORES_PALETA.find(c => !coresUsadas.has(c.toUpperCase()));
                 corEspaco = alternativa || this.CORES_PALETA[idx % this.CORES_PALETA.length];
               }
               coresUsadas.add(corEspaco.toUpperCase());
 
-              const extrasCount = Array.isArray(meta.participantesExtras) ? meta.participantesExtras.length : 0;
-              const numMembros = Math.max(item.espaco.total_membros || 1, 1 + extrasCount);
+              const membrosApiCount = item.espaco.membros_detalhes?.length || 0;
+              const numMembros = Math.max(item.espaco.total_membros || 1, membrosApiCount);
               const tipoMeta = meta.tipo || (numMembros > 1 ? 'compartilhado' : 'individual');
               const tipoLabel =
                 tipoMeta === 'individual'
@@ -303,7 +508,7 @@ export class Dashboard implements OnInit {
                 nome,
                 tipo: tipoLabel,
                 cor: corEspaco,
-                icone: meta.icone || padrao.icone,
+                icone: (item.espaco.icone as IconeEspacoDash) || meta.icone || padrao.icone,
                 saldo: rec - desp,
                 receitas: rec,
                 despesas: desp
@@ -340,6 +545,9 @@ export class Dashboard implements OnInit {
         this.ultimoTickProcessado = this.espacoService.selecaoEspacoTick() + 1;
         this.espacoService.definirEspacoAtivoId(idNum);
       }
+    } else {
+      this.ultimoTickProcessado = this.espacoService.selecaoEspacoTick() + 1;
+      this.espacoService.definirEspacoAtivoId(null);
     }
   }
 
@@ -349,12 +557,9 @@ export class Dashboard implements OnInit {
     return nomeCompleto.split(' ')[0];
   }
 
-  obterCorCategoria(nome: string, fallbackIdx = 0): string {
-    const cat = this.categoriaService.categorias().find(
-      c => c.nome.toLowerCase() === (nome || '').toLowerCase()
-    );
-    if (cat) return cat.cor;
-    return this.CORES_PALETA[fallbackIdx % this.CORES_PALETA.length];
+  obterCorCategoria(nome: string, fallbackIdx = 0, espacoId?: number): string {
+    const espId = espacoId ?? (this.espacoFiltro() !== 'todos' ? Number(this.espacoFiltro()) : undefined);
+    return this.categoriaService.obterCor(nome, espId);
   }
 
   formatarMoeda(valor: number): string {
@@ -588,14 +793,44 @@ export class Dashboard implements OnInit {
   }
 
   abrirModalOrcamento(): void {
-    const clone = this.categoriaService.categorias().map(c => ({ ...c }));
-    this.categoriasEdicao.set(clone);
-    this.tetoGeralEdicao = this.categoriaService.tetoGeralManual();
-    this.novaCategoriaNome = '';
-    this.novaCategoriaLimite = null;
-    this.erroModalOrcamento.set('');
-    this.modalOrcamentoAberto.set(true);
-    this.cdr.detectChanges();
+    const f = this.espacoFiltro();
+    const espId = f !== 'todos' ? Number(f) : (this.todosEspacos().length === 1 ? this.todosEspacos()[0].id : null);
+    this.espacoIdEdicaoOrcamento.set(espId);
+
+    if (espId !== null) {
+      this.espacoService.obterOrcamentoEspaco(espId).subscribe({
+        next: (orc) => {
+          this.tetoGeralEdicao = orc.teto_geral !== null ? Number(orc.teto_geral) : null;
+          const cats = (orc.categorias || []).map(c => ({
+            id: c.id ? String(c.id) : c.nome,
+            nome: c.nome,
+            limite: Number(c.limite) || 0,
+            cor: c.cor || this.categoriaService.obterCor(c.nome, espId)
+          }));
+          this.categoriasEdicao.set(cats);
+          this.novaCategoriaNome = '';
+          this.novaCategoriaLimite = null;
+          this.erroModalOrcamento.set('');
+          this.modalOrcamentoAberto.set(true);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.tetoGeralEdicao = null;
+          this.categoriasEdicao.set([]);
+          this.modalOrcamentoAberto.set(true);
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      const clone = this.categoriaService.categorias().map(c => ({ ...c }));
+      this.categoriasEdicao.set(clone);
+      this.tetoGeralEdicao = this.categoriaService.tetoGeralManual();
+      this.novaCategoriaNome = '';
+      this.novaCategoriaLimite = null;
+      this.erroModalOrcamento.set('');
+      this.modalOrcamentoAberto.set(true);
+      this.cdr.detectChanges();
+    }
   }
 
   fecharModalOrcamento(): void {
@@ -635,7 +870,8 @@ export class Dashboard implements OnInit {
     }
 
     this.erroModalOrcamento.set('');
-    const novaCor = this.categoriaService.obterProximaCor();
+    const espId = this.espacoIdEdicaoOrcamento() ?? (this.espacoFiltro() !== 'todos' ? Number(this.espacoFiltro()) : undefined);
+    const novaCor = this.categoriaService.obterCor(nome, espId);
     this.categoriasEdicao.update(lista => [
       ...lista,
       {
@@ -657,8 +893,38 @@ export class Dashboard implements OnInit {
   }
 
   salvarModalOrcamento(): void {
-    this.categoriaService.salvarTodas(this.categoriasEdicao(), this.tetoGeralEdicao);
-    this.fecharModalOrcamento();
+    const espId = this.espacoIdEdicaoOrcamento();
+    if (espId !== null) {
+      this.salvandoOrcamento.set(true);
+      const payload: OrcamentoEspacoUpdate = {
+        teto_geral: this.tetoGeralEdicao,
+        categorias: this.categoriasEdicao().map(c => ({
+          nome: c.nome,
+          limite: Number(c.limite) || 0,
+          cor: c.cor || this.categoriaService.obterCor(c.nome, espId)
+        }))
+      };
+      this.espacoService.salvarOrcamentoEspaco(espId, payload).subscribe({
+        next: () => {
+          this.salvandoOrcamento.set(false);
+          this.fecharModalOrcamento();
+          this.toastMensagem.set('Teto do espaço atualizado com sucesso!');
+          setTimeout(() => this.toastMensagem.set(''), 3000);
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.salvandoOrcamento.set(false);
+          this.erroModalOrcamento.set(err?.error?.detail || 'Erro ao salvar orçamento do espaço.');
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.categoriaService.salvarTodas(this.categoriasEdicao(), this.tetoGeralEdicao);
+      this.fecharModalOrcamento();
+      this.toastMensagem.set('Teto de orçamento atualizado com sucesso!');
+      setTimeout(() => this.toastMensagem.set(''), 3000);
+      this.cdr.detectChanges();
+    }
   }
 
   // --- CRIAR NOVO ESPAÇO / GRUPO DIRETO PELO INÍCIO ---
@@ -743,54 +1009,42 @@ export class Dashboard implements OnInit {
       this.adicionarConvidadoLista();
     }
 
-    const participantesExtras: any[] = [];
-    if (this.novoEspacoTipo === 'compartilhado') {
-      this.novosConvidados().forEach((em, i) => {
-        const nomeExtraido = em.split('@')[0];
-        const formatado = nomeExtraido.charAt(0).toUpperCase() + nomeExtraido.slice(1);
-        const iniciais = formatado.substring(0, 2).toUpperCase();
-        participantesExtras.push({
-          nome: formatado,
-          email: em,
-          papel: 'membro',
-          iniciais,
-          corAvatar: this.CORES_PALETA[(i + 2) % this.CORES_PALETA.length]
-        });
-      });
-    }
-
-    this.espacoService.criarEspaco({ nome }).subscribe({
+    this.espacoService.criarEspaco({
+      nome,
+      cor: this.novoEspacoCor,
+      icone: this.novoEspacoIcone
+    }).subscribe({
       next: (novo) => {
         this.salvarMetaNoStorage(novo.id, {
           tipo: this.novoEspacoTipo,
           cor: this.novoEspacoCor,
           corPersonalizada: true,
-          icone: this.novoEspacoIcone,
-          participantesExtras
+          icone: this.novoEspacoIcone
         });
 
-        const numMembros = this.novoEspacoTipo === 'individual' ? 1 : Math.max(2, 1 + participantesExtras.length);
-        const tipoLabel =
-          this.novoEspacoTipo === 'individual'
-            ? 'Espaço individual · 1 pessoa'
-            : `Compartilhado · ${numMembros} pessoas`;
-
-        const novoCard: EspacoCardDash = {
-          id: novo.id,
-          nome: novo.nome,
-          tipo: tipoLabel,
-          cor: this.novoEspacoCor,
-          icone: this.novoEspacoIcone,
-          saldo: 0,
-          receitas: 0,
-          despesas: 0
-        };
-
-        this.todosEspacos.update(lista => [...lista, novoCard]);
-        this.espacoService.definirEspacoAtivoId(novo.id);
-        this.fecharModalNovoEspaco();
-        this.exibirToast(`Espaço "${novo.nome}" criado com sucesso!`);
-        this.cdr.detectChanges();
+        const convidados = this.novosConvidados();
+        if (this.novoEspacoTipo === 'compartilhado' && convidados.length > 0) {
+          const reqs = convidados.map(em => this.espacoService.enviarConvite(novo.id, em));
+          forkJoin(reqs).subscribe({
+            next: () => {
+              this.espacoService.definirEspacoAtivoId(novo.id);
+              this.fecharModalNovoEspaco();
+              this.exibirToast(`Espaço "${novo.nome}" criado e convites enviados!`);
+              this.carregarDadosDashboard();
+            },
+            error: () => {
+              this.espacoService.definirEspacoAtivoId(novo.id);
+              this.fecharModalNovoEspaco();
+              this.exibirToast(`Espaço "${novo.nome}" criado!`);
+              this.carregarDadosDashboard();
+            }
+          });
+        } else {
+          this.espacoService.definirEspacoAtivoId(novo.id);
+          this.fecharModalNovoEspaco();
+          this.exibirToast(`Espaço "${novo.nome}" criado com sucesso!`);
+          this.carregarDadosDashboard();
+        }
       },
       error: (err) => {
         const msg = err.error?.detail || 'Não foi possível criar o espaço. Verifique se já existe outro com este nome.';

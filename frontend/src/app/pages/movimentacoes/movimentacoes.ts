@@ -37,8 +37,38 @@ export class Movimentacoes implements OnInit {
     total_movimentacoes: 0
   });
 
-  // Categorias integradas
-  categorias = computed(() => this.categoriaService.categorias());
+  // Categorias integradas e dinâmicas (pessoais + espaços)
+  categorias = computed(() => {
+    const pessoais = this.categoriaService.categorias();
+    const map = new Map<string, { id?: string; nome: string; limite: number; gasto: number; cor: string }>();
+
+    // 1. Categorias pessoais cadastradas
+    pessoais.forEach(c => {
+      map.set(c.nome.toLowerCase().trim(), {
+        ...c,
+        cor: this.categoriaService.obterCor(c.nome)
+      });
+    });
+
+    // 2. Categorias presentes nas movimentações carregadas do espaço
+    const movs = this.movimentacoes();
+    movs.forEach(m => {
+      if (m.categoria && m.categoria.trim()) {
+        const chave = m.categoria.toLowerCase().trim();
+        if (!map.has(chave)) {
+          map.set(chave, {
+            id: 'mov-' + chave,
+            nome: m.categoria.trim(),
+            limite: 0,
+            gasto: 0,
+            cor: this.categoriaService.obterCor(m.categoria, m.espaco_id)
+          });
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  });
 
   // Filtros
   tipoFiltro = signal<'todos' | 'receita' | 'despesa'>('todos');
@@ -337,6 +367,20 @@ export class Movimentacoes implements OnInit {
         if (reqId !== this.requisicaoMovId) return;
         this.movimentacoes.set(itens);
         this.calcularResumoLocal(itens);
+
+        // Sincroniza cores configuradas do espaço se houver filtro por espaço
+        if (espacoParam) {
+          this.espacoService.obterOrcamentoEspaco(espacoParam).subscribe({
+            next: (orc) => {
+              if (orc?.categorias) {
+                this.categoriaService.armazenarCoresEspaco(espacoParam, orc.categorias);
+                this.cdr.detectChanges();
+              }
+            },
+            error: () => {}
+          });
+        }
+
         this.carregando.set(false);
         this.cdr.detectChanges();
       },
@@ -642,9 +686,9 @@ export class Movimentacoes implements OnInit {
   }
 
   // Utilitários
-  obterCorCategoria(nome: string): string {
-    const cat = this.categorias().find(c => c.nome.toLowerCase() === nome.toLowerCase());
-    return cat ? cat.cor : '#64748b';
+  obterCorCategoria(nome: string, espacoId?: number): string {
+    const espId = espacoId ?? (this.espacoFiltro() !== 'todos' ? Number(this.espacoFiltro()) : undefined);
+    return this.categoriaService.obterCor(nome, espId);
   }
 
   formatarMoeda(valor: number): string {

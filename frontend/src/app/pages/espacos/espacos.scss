@@ -405,7 +405,31 @@
     font-size: 0.74rem;
     font-weight: 600;
     color: #64748B;
+    max-width: 86px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
   }
+
+  &.is-pending {
+    opacity: 0.9;
+  }
+}
+
+.badge-pending-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.12rem 0.45rem;
+  border-radius: 9999px;
+  background-color: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FCD34D;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .participant-avatar {
@@ -421,6 +445,11 @@
   border: 2px solid #FFFFFF;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
+
+  &.is-pending {
+    border: 2px dashed #F59E0B;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+  }
 
   &.sm {
     width: 32px;
@@ -1030,12 +1059,33 @@
   gap: 0.5rem;
 }
 
+.members-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .members-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background-color: #E2E8F0;
+    color: #475569;
+  }
+}
+
 .members-list {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
+  padding-right: 0.15rem;
 }
 
 .member-entry {
@@ -1046,17 +1096,32 @@
   border-radius: 12px;
   background-color: #F8FAFC;
   border: 1px solid #E2E8F0;
+  transition: all 0.2s ease;
+
+  &.is-pending {
+    background-color: #FFFDF5;
+    border-color: #FDE68A;
+  }
 
   .member-left {
     display: flex;
     align-items: center;
     gap: 0.7rem;
+    min-width: 0;
   }
 
   .member-info-texts {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .member-title-line {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
   }
 
   .member-entry-name {
@@ -1065,10 +1130,128 @@
     color: #0F172A;
   }
 
-  .member-entry-role {
-    font-size: 0.76rem;
+  .member-entry-email {
+    font-size: 0.74rem;
     color: #64748B;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 170px;
   }
+
+  .badge-status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+
+    &.admin {
+      background-color: #EFF6FF;
+      color: #2563EB;
+      border: 1px solid #BFDBFE;
+    }
+
+    &.ativo {
+      background-color: #ECFDF5;
+      color: #059669;
+      border: 1px solid #A7F3D0;
+    }
+
+    &.pendente {
+      background-color: #FEF3C7;
+      color: #D97706;
+      border: 1px solid #FCD34D;
+      animation: pulsePendente 2.5s infinite ease-in-out;
+    }
+  }
+
+  .badge-you-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748B;
+    margin-left: 0.25rem;
+  }
+
+  .member-admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-pill-role-toggle {
+    padding: 0.32rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.08);
+    color: #2563EB;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+
+    &:hover {
+      background: #2563EB;
+      color: #ffffff;
+      border-color: #2563EB;
+    }
+
+    &.is-admin {
+      border-color: #CBD5E1;
+      background: #F1F5F9;
+      color: #64748B;
+
+      &:hover {
+        background: #E2E8F0;
+        color: #334155;
+        border-color: #94A3B8;
+      }
+    }
+  }
+
+  .btn-pill-leave-sm {
+    padding: 0.32rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+
+    &:hover {
+      background: #EF4444;
+      color: #ffffff;
+    }
+  }
+
+  .btn-cancel-invite-sm {
+    padding: 0.35rem 0.7rem;
+    border-radius: 9999px;
+    border: 1px solid #FECACA;
+    background-color: #FEF2F2;
+    color: #DC2626;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #FEE2E2;
+      border-color: #F87171;
+    }
+  }
+}
+
+@keyframes pulsePendente {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
 }
 
 .modal-stack-actions {
@@ -1138,6 +1321,23 @@
   }
 }
 
+.btn-pill-leave {
+  padding: 0.7rem 1.2rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+
+  &:hover {
+    background-color: #EF4444;
+    color: #ffffff;
+  }
+}
+
 .btn-pill-danger-solid {
   padding: 0.7rem 1.2rem;
   border-radius: 9999px;
@@ -1163,6 +1363,13 @@
     background: #EF4444;
     color: #ffffff;
   }
+}
+
+.confirm-subinfo {
+  font-size: 0.82rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.45;
 }
 
 .confirm-content {
@@ -1622,3 +1829,641 @@
     display: none !important;
   }
 }
+
+/* ========================================================
+   SEÇÃO DE CONVITES DE ESPAÇOS
+======================================================== */
+.convites-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.convites-heading-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--cg-texto-escuro-logo, #0F172A);
+
+  svg {
+    color: var(--cg-verde-principal, #22C55E);
+  }
+
+  .convite-badge-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background-color: rgba(34, 197, 94, 0.16);
+    color: #16A34A;
+    font-size: 0.74rem;
+    font-weight: 800;
+  }
+}
+
+.convites-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: stretch;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.convites-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 1.35rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+}
+
+.convites-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .convites-card-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0F172A;
+  }
+
+  .convites-card-sub {
+    font-size: 0.82rem;
+    color: #64748B;
+  }
+}
+
+.convites-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.2rem 1.5rem;
+  gap: 0.6rem;
+  color: #94A3B8;
+  background-color: #F8FAFC;
+  border: 1px dashed #E2E8F0;
+  border-radius: 14px;
+
+  svg {
+    color: #94A3B8;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #64748B;
+  }
+}
+
+.convites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.convite-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1.1rem;
+  border-radius: 14px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  flex-wrap: wrap;
+}
+
+.convite-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+
+  .convite-item-space {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #0F172A;
+  }
+
+  .convite-item-sender {
+    font-size: 0.78rem;
+    color: #64748B;
+
+    strong {
+      color: #0F172A;
+    }
+  }
+}
+
+.convite-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-convite-aceitar {
+  padding: 0.45rem 1rem;
+  border-radius: 10px;
+  border: none;
+  background-color: #22C55E;
+  color: #052E16;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.16s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #4ADE80;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-convite-recusar {
+  padding: 0.45rem 0.95rem;
+  border-radius: 10px;
+  border: 1px solid #CBD5E1;
+  background-color: #FFFFFF;
+  color: #64748B;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #EF4444;
+    color: #EF4444;
+    background-color: rgba(239, 68, 68, 0.06);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* Formulário Rápido de Envio */
+.convite-form-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.convite-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.convite-select-space {
+  height: 42px;
+  padding: 0 0.85rem;
+  border-radius: 12px;
+  border: 1.5px solid #CBD5E1;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  min-width: 160px;
+  flex: 1;
+
+  &:focus {
+    border-color: #22C55E;
+  }
+}
+
+.convite-input-email {
+  height: 42px;
+  padding: 0 0.95rem;
+  border-radius: 12px;
+  border: 1.5px solid #CBD5E1;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  outline: none;
+  flex: 1.5;
+  min-width: 170px;
+
+  &:focus {
+    border-color: #22C55E;
+    background-color: #FFFFFF;
+  }
+}
+
+.btn-enviar-convite-quick {
+  height: 42px;
+  padding: 0 1.15rem;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.16s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.28);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.convite-erro-msg {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #DC2626;
+  margin-top: 2px;
+}
+
+/* Histórico de Enviados */
+.convites-enviados-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #E2E8F0;
+}
+
+.convites-subheading {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.convites-empty-sub {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #94A3B8;
+  font-style: italic;
+}
+
+.convites-sent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.convite-sent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 11px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+.convite-sent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+
+  .convite-sent-email {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0F172A;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .convite-sent-space {
+    font-size: 0.72rem;
+    color: #64748B;
+  }
+}
+
+.convite-sent-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: capitalize;
+
+  &.pendente {
+    background-color: rgba(245, 158, 11, 0.14);
+    color: #D97706;
+  }
+
+  &.aceito {
+    background-color: rgba(34, 197, 94, 0.14);
+    color: #16A34A;
+  }
+
+  &.recusado {
+    background-color: rgba(239, 68, 68, 0.14);
+    color: #DC2626;
+  }
+}
+
+.btn-cancelar-sent {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background-color: #E2E8F0;
+  color: #64748B;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.16s ease;
+
+  &:hover {
+    background-color: #FEE2E2;
+    color: #DC2626;
+  }
+}
+
+/* ========================================================
+   MODO ESCURO (DARK THEME) PARA A SEÇÃO DE CONVITES
+======================================================== */
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme) {
+  .convites-heading-group {
+    color: #F8FAFC;
+    svg {
+      color: #4ADE80;
+    }
+    .convite-badge-count {
+      background-color: rgba(34, 197, 94, 0.18);
+      color: #4ADE80;
+    }
+  }
+
+  .convites-card {
+    background-color: #111827;
+    border-color: #24324A;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  .convites-card-header {
+    .convites-card-title {
+      color: #F8FAFC;
+    }
+    .convites-card-sub {
+      color: #94A3B8;
+    }
+  }
+
+  .convites-empty {
+    background-color: #1A2332;
+    border-color: #24324A;
+    color: #94A3B8;
+    svg {
+      color: #64748B;
+    }
+    p {
+      color: #94A3B8;
+    }
+  }
+
+  .convite-item-row {
+    background-color: #1A2332;
+    border-color: #24324A;
+  }
+
+  .convite-item-info {
+    .convite-item-space {
+      color: #F8FAFC;
+    }
+    .convite-item-sender {
+      color: #94A3B8;
+      strong {
+        color: #F8FAFC;
+      }
+    }
+  }
+
+  .btn-convite-aceitar {
+    background-color: #22C55E;
+    color: #052E16;
+    &:hover:not(:disabled) {
+      background-color: #4ADE80;
+    }
+  }
+
+  .btn-convite-recusar {
+    background-color: #111827;
+    border-color: #24324A;
+    color: #94A3B8;
+    &:hover:not(:disabled) {
+      border-color: #F87171;
+      color: #F87171;
+      background-color: rgba(248, 113, 113, 0.12);
+    }
+  }
+
+  .convite-select-space,
+  .convite-input-email {
+    background-color: #1A2332;
+    border-color: #24324A;
+    color: #F8FAFC;
+    &:focus {
+      border-color: #22C55E;
+      background-color: #1A2332;
+    }
+  }
+
+  .convites-enviados-block {
+    border-top-color: #24324A;
+  }
+
+  .convites-subheading {
+    color: #F8FAFC;
+  }
+
+  .convites-empty-sub {
+    color: #64748B;
+  }
+
+  .convite-sent-row {
+    background-color: #1A2332;
+    border-color: #24324A;
+  }
+
+  .convite-sent-info {
+    .convite-sent-email {
+      color: #F8FAFC;
+    }
+    .convite-sent-space {
+      color: #94A3B8;
+    }
+  }
+
+  .btn-cancelar-sent {
+    background-color: #24324A;
+    color: #94A3B8;
+    &:hover {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: #F87171;
+    }
+  }
+
+  /* Participantes e Status de Convite no Modo Escuro */
+  .badge-pending-tag {
+    background-color: rgba(245, 158, 11, 0.16);
+    color: #FBBF24;
+    border-color: rgba(245, 158, 11, 0.35);
+  }
+
+  .members-count-badge {
+    background-color: #24324A;
+    color: #94A3B8;
+  }
+
+  .member-entry {
+    background-color: #1A2332;
+    border-color: #24324A;
+
+    &.is-pending {
+      background-color: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .member-entry-name {
+      color: #F8FAFC;
+    }
+
+    .member-entry-email {
+      color: #94A3B8;
+    }
+
+    .badge-status-pill {
+      &.admin {
+        background-color: rgba(59, 130, 246, 0.18);
+        color: #60A5FA;
+        border-color: rgba(59, 130, 246, 0.35);
+      }
+
+      &.ativo {
+        background-color: rgba(34, 197, 94, 0.18);
+        color: #4ADE80;
+        border-color: rgba(34, 197, 94, 0.35);
+      }
+
+      &.pendente {
+        background-color: rgba(245, 158, 11, 0.18);
+        color: #FBBF24;
+        border-color: rgba(245, 158, 11, 0.35);
+      }
+    }
+
+    .badge-you-tag {
+      color: #94A3B8;
+    }
+
+    .btn-pill-role-toggle {
+      background-color: rgba(59, 130, 246, 0.16);
+      border-color: rgba(59, 130, 246, 0.35);
+      color: #60A5FA;
+
+      &:hover {
+        background-color: #2563EB;
+        color: #ffffff;
+        border-color: #2563EB;
+      }
+
+      &.is-admin {
+        background-color: #24324A;
+        border-color: #334155;
+        color: #94A3B8;
+
+        &:hover {
+          background-color: #334155;
+          color: #F8FAFC;
+          border-color: #475569;
+        }
+      }
+    }
+
+    .btn-pill-leave-sm {
+      background-color: rgba(239, 68, 68, 0.14);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #F87171;
+
+      &:hover {
+        background-color: #EF4444;
+        color: #ffffff;
+        border-color: #EF4444;
+      }
+    }
+
+    .btn-cancel-invite-sm {
+      background-color: rgba(239, 68, 68, 0.12);
+      color: #F87171;
+      border-color: rgba(239, 68, 68, 0.3);
+      &:hover {
+        background-color: rgba(239, 68, 68, 0.25);
+        border-color: #EF4444;
+      }
+    }
+  }
+
+  .btn-pill-leave {
+    background-color: rgba(239, 68, 68, 0.14);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #F87171;
+
+    &:hover {
+      background-color: #EF4444;
+      color: #ffffff;
+      border-color: #EF4444;
+    }
+  }
+
+  .confirm-subinfo {
+    color: #94A3B8;
+  }
+}
+

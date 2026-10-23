@@ -1,176 +1,884 @@
-<div class="relatorios-container">
-  
-  <!-- Cabeçalho -->
-  <div class="header-section">
-    <h1 class="page-title">Relatórios</h1>
-    <p class="page-subtitle">Acompanhe sua vida financeira</p>
-  </div>
+<div class="relatorios-page">
 
-  <!-- Card Filtro de Período com Calendário -->
-  <section class="periodo-card">
-    <div class="periodo-header">
-      <div class="periodo-title-wrap">
-        <svg class="calendar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-        <h3 class="periodo-title">Período de Análise</h3>
+  <!-- 1. HERO HEADER DE RELATÓRIOS & FILTROS GERAIS -->
+  <header class="relatorios-hero">
+    <div class="hero-left">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        <span>Inteligência financeira · {{ nomeEspacoFiltrado() }}</span>
+      </div>
+      <h1 class="hero-title">Relatórios e análises</h1>
+      <p class="hero-subtitle">
+        Explore o fluxo de caixa, a evolução entre receitas e despesas e a distribuição detalhada por categoria e espaço.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <!-- Seletor Customizado de Espaço -->
+      <div class="space-filter-wrapper">
+        <button
+          type="button"
+          class="space-filter-pill"
+          [class.open]="dropdownEspacoAberto()"
+          (click)="toggleDropdownEspaco($event)">
+          @if (corEspacoFiltrado(); as corEspaco) {
+            <span class="filter-color-dot" [style.background-color]="corEspaco"></span>
+          } @else {
+            <svg class="filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          }
+          <span class="hero-select-label">{{ nomeEspacoFiltrado() }}</span>
+          <svg class="select-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+        @if (dropdownEspacoAberto()) {
+          <div class="space-filter-dropdown" (click)="$event.stopPropagation()">
+            <div class="space-dropdown-header">FILTRAR POR ESPAÇO</div>
+
+            <button
+              type="button"
+              class="space-dropdown-item"
+              [class.active]="espacoFiltro() === 'todos'"
+              (click)="selecionarEspaco('todos', $event)">
+              <span class="item-icon-box">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
+              <div class="item-text-col">
+                <span class="item-title">Todos os espaços</span>
+                <span class="item-sub">Análise consolidada</span>
+              </div>
+              @if (espacoFiltro() === 'todos') {
+                <svg class="item-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              }
+            </button>
+
+            @if (todosEspacos().length > 0) {
+              <div class="space-dropdown-divider"></div>
+              <div class="space-dropdown-list">
+                @for (esp of todosEspacos(); track esp.id) {
+                  <button
+                    type="button"
+                    class="space-dropdown-item"
+                    [class.active]="espacoFiltro() === esp.id.toString()"
+                    (click)="selecionarEspaco(esp.id.toString(), $event)">
+                    <span class="item-color-dot" [style.background-color]="esp.cor"></span>
+                    <div class="item-text-col">
+                      <span class="item-title">{{ esp.nome }}</span>
+                      <span class="item-sub">{{ esp.tipo }}</span>
+                    </div>
+                    @if (espacoFiltro() === esp.id.toString()) {
+                      <svg class="item-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
       </div>
 
-      <!-- Atalhos de Período Rápidos -->
-      <div class="periodo-presets">
-        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'mes_atual'" (click)="aplicarPreset('mes_atual')">Este Mês</button>
-        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'ultimos_7'" (click)="aplicarPreset('ultimos_7')">Últimos 7 dias</button>
-        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'ultimos_30'" (click)="aplicarPreset('ultimos_30')">Últimos 30 dias</button>
-        <button type="button" class="preset-pill" [class.active]="presetAtivo() === 'personalizado'" (click)="presetAtivo.set('personalizado')">Personalizado</button>
+      <!-- Botão Exportar CSV -->
+      <button
+        type="button"
+        class="btn-hero-export"
+        [disabled]="totalMovimentacoes() === 0"
+        [title]="totalMovimentacoes() === 0 ? 'Sem movimentações no período para exportar' : 'Exportar relatório em CSV'"
+        (click)="exportarRelatorioCsv()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Exportar CSV</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. BARRA DE PERÍODO E CALENDÁRIO -->
+  <section class="periodo-toolbar-card">
+    <div class="periodo-top-row">
+      <div class="periodo-title-group">
+        <div class="calendar-badge-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
+        <div>
+          <h2 class="periodo-heading">Período de análise</h2>
+          <p class="periodo-subheading">{{ mensagemPeriodo() }}</p>
+        </div>
+      </div>
+
+      <div class="periodo-presets-row">
+        <button type="button" class="preset-chip" [class.active]="presetAtivo() === 'mes_atual'" (click)="aplicarPreset('mes_atual')">Este mês</button>
+        <button type="button" class="preset-chip" [class.active]="presetAtivo() === 'ultimos_7'" (click)="aplicarPreset('ultimos_7')">Últimos 7 dias</button>
+        <button type="button" class="preset-chip" [class.active]="presetAtivo() === 'ultimos_30'" (click)="aplicarPreset('ultimos_30')">Últimos 30 dias</button>
+        <button type="button" class="preset-chip" [class.active]="presetAtivo() === 'ultimos_90'" (click)="aplicarPreset('ultimos_90')">Últimos 90 dias</button>
+        <button type="button" class="preset-chip" [class.active]="presetAtivo() === 'ano_atual'" (click)="aplicarPreset('ano_atual')">Este ano</button>
       </div>
     </div>
 
-    <!-- Intervalo de Datas com Calendário -->
-    <div class="periodo-date-range">
-      <div class="date-input-group">
-        <label class="date-label" for="dataInicioInput">De</label>
-        <div class="date-input-wrap">
-          <input 
-            id="dataInicioInput"
-            type="date" 
-            class="input-date-pill" 
-            [ngModel]="dataInicio()" 
-            (ngModelChange)="onDataInicioChange($event)"
-          />
-        </div>
+    <div class="periodo-bottom-row">
+      <div class="date-field-group">
+        <label class="date-field-label" for="relDataInicio">Data inicial</label>
+        <input
+          id="relDataInicio"
+          type="date"
+          class="date-field-input"
+          [ngModel]="dataInicio()"
+          (ngModelChange)="onDataInicioChange($event)" />
       </div>
 
-      <div class="date-sep-arrow">→</div>
+      <span class="date-range-arrow">→</span>
 
-      <div class="date-input-group">
-        <label class="date-label" for="dataFimInput">Até</label>
-        <div class="date-input-wrap">
-          <input 
-            id="dataFimInput"
-            type="date" 
-            class="input-date-pill" 
-            [ngModel]="dataFim()" 
-            (ngModelChange)="onDataFimChange($event)"
-          />
-        </div>
+      <div class="date-field-group">
+        <label class="date-field-label" for="relDataFim">Data final</label>
+        <input
+          id="relDataFim"
+          type="date"
+          class="date-field-input"
+          [ngModel]="dataFim()"
+          (ngModelChange)="onDataFimChange($event)" />
       </div>
 
-      <button class="btn-filtrar" (click)="filtrarPeriodo()" [disabled]="carregando() || !!erroData()">
-        {{ carregando() ? 'Filtrando...' : 'Filtrar' }}
+      <button
+        type="button"
+        class="btn-apply-period"
+        [disabled]="carregando() || !!erroData()"
+        (click)="filtrarPeriodo()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <span>{{ carregando() ? 'Atualizando...' : 'Aplicar período' }}</span>
       </button>
     </div>
 
     @if (erroData()) {
-      <div class="periodo-erro-box">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <div class="periodo-alert-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
         <span>{{ erroData() }}</span>
       </div>
-    } @else if (mensagemPeriodo()) {
-      <div class="periodo-feedback-tag">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-        <span>{{ mensagemPeriodo() }}</span>
-      </div>
     }
   </section>
 
-  <!-- Cards de Resumo -->
-  <div class="cards-grid">
-    <app-summary-card 
-      title="SALDO" 
-      [value]="saldo()" 
-      [icon]="saldoNegativo() ? '/icons/ic-saldo-negativo.svg' : '/icons/ic-saldo.svg'" 
-      [subtitle]="saldoSubtitulo()" 
-      [highlight]="true" 
+  <!-- 3. QUATRO CARDS DE INDICADORES (KPIs) -->
+  <section class="kpis-grid">
+    <app-summary-card
+      title="SALDO DO PERÍODO"
+      [value]="saldo()"
+      [icon]="saldoNegativo() ? '/icons/ic-saldo-negativo.svg' : '/icons/ic-saldo.svg'"
+      [subtitle]="saldoSubtitulo()"
+      [highlight]="true"
       [iconBgClass]="saldoNegativo() ? 'bg-red-light' : 'bg-green-light'">
     </app-summary-card>
 
-    <app-summary-card 
-      title="RECEITAS" 
-      [value]="receitas()" 
-      icon="/icons/ic-receitas.svg" 
-      [highlight]="true" 
+    <app-summary-card
+      title="RECEITAS"
+      [value]="receitas()"
+      icon="/icons/ic-receitas.svg"
+      [subtitle]="qtdReceitas() + ' entrada(s) no período'"
+      [highlight]="true"
       iconBgClass="bg-green-light">
     </app-summary-card>
 
-    <app-summary-card 
-      title="DESPESAS" 
-      [value]="despesas()" 
-      icon="/icons/ic-despesas.svg" 
-      [highlight]="true" 
+    <app-summary-card
+      title="DESPESAS"
+      [value]="despesas()"
+      icon="/icons/ic-despesas.svg"
+      [subtitle]="qtdDespesas() + ' saída(s) no período'"
+      [highlight]="true"
       iconBgClass="bg-red-light">
     </app-summary-card>
-  </div>
 
-  <!-- Grid Central: Gastos por Categoria & Receitas x Despesas -->
-  <div class="middle-grid">
-    
-    <!-- Gastos por Categoria -->
-    <app-category-expenses
-      titulo="Gastos por categoria"
-      [total]="totalGastosCategoria()"
-      [itens]="categoriasGastos()">
-    </app-category-expenses>
+    <app-summary-card
+      title="TAXA DE ECONOMIA"
+      [value]="taxaEconomia() + '%'"
+      icon="/icons/ic-economia.svg"
+      [subtitle]="'Média diária: ' + mediaDiariaGastos()"
+      [highlight]="false"
+      iconBgClass="bg-green-light">
+    </app-summary-card>
+  </section>
 
-    <!-- Gráfico Receitas x Despesas -->
-    <section class="chart-card">
-      <div class="chart-header-row">
-        <h3 class="chart-title">Receitas x Despesas</h3>
-        <div class="chart-legend">
-          <span class="legend-item"><span class="legend-dot dot-receita"></span> Receitas</span>
-          <span class="legend-item"><span class="legend-dot dot-despesa"></span> Despesas</span>
+  <!-- 4. GRID CENTRAL: EVOLUÇÃO RECEITAS X DESPESAS & DISTRIBUIÇÃO DE GASTOS -->
+  <div class="analytics-main-grid">
+
+    <!-- COLUNA ESQUERDA: GRÁFICO EVOLUÇÃO RECEITAS X DESPESAS -->
+    <section class="report-card">
+      <div class="report-card-header">
+        <div>
+          <h2 class="report-card-title">Evolução: Receitas x Despesas</h2>
+          <p class="report-card-subtitle">Comparativo por intervalo no período selecionado</p>
+        </div>
+        <div class="chart-legend-pills">
+          <span class="legend-pill">
+            <span class="legend-dot income"></span>
+            Receitas
+          </span>
+          <span class="legend-pill">
+            <span class="legend-dot expense"></span>
+            Despesas
+          </span>
         </div>
       </div>
 
-      <div class="chart-body">
-        <div class="bars-container">
-          @for (semana of dadosSemanas(); track semana.rotulo) {
-            <div class="week-group">
-              <div class="bars-pair">
-                @for (barra of semana.barras; track barra.cor + barra.valor) {
-                  <div class="bar-col-wrapper" [title]="barra.legenda">
-                    <div 
-                      class="bar-fill" 
-                      [style.height.%]="barra.valor" 
-                      [style.background-color]="barra.cor">
-                    </div>
+      @if (totalMovimentacoes() === 0) {
+        <div class="report-empty-state">
+          <div class="empty-icon-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </div>
+          <h4>Sem movimentações neste período</h4>
+          <p>Registre receitas ou despesas ou ajuste o filtro de datas acima para visualizar o gráfico comparativo.</p>
+        </div>
+      } @else {
+        <div class="evolution-chart-wrapper">
+          <div class="chart-plot-area">
+            <div class="chart-grid-lines">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+            <div class="bars-columns">
+              @for (semana of dadosSemanas(); track semana.rotulo) {
+                <div class="bar-group-col">
+                  <div class="bars-pair-track">
+                    @for (barra of semana.barras; track barra.tipo) {
+                      <div class="bar-slot" [title]="barra.legenda">
+                        <div
+                          class="bar-pillar"
+                          [class.income]="barra.tipo === 'receita'"
+                          [class.expense]="barra.tipo === 'despesa'"
+                          [style.height.%]="barra.valor > 0 ? barra.valor : 4"
+                          [class.zero]="barra.valorReal === 0">
+                        </div>
+                      </div>
+                    }
                   </div>
+                  <span class="bar-col-label">{{ semana.rotulo }}</span>
+                  <span class="bar-col-sublabel">{{ semana.subRotulo }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Mini Destaques do Período abaixo do gráfico -->
+          <div class="chart-highlights-row">
+            <div class="highlight-box">
+              <span class="hl-label">Maior receita</span>
+              <strong class="hl-value income">{{ maiorReceitaValor() }}</strong>
+              <span class="hl-desc">{{ maiorReceitaDesc() }}</span>
+            </div>
+            <div class="highlight-box">
+              <span class="hl-label">Maior despesa</span>
+              <strong class="hl-value expense">{{ maiorDespesaValor() }}</strong>
+              <span class="hl-desc">{{ maiorDespesaDesc() }}</span>
+            </div>
+            <div class="highlight-box">
+              <span class="hl-label">Média por saída</span>
+              <strong class="hl-value">{{ mediaGastos() }}</strong>
+              <span class="hl-desc">{{ totalMovimentacoes() }} lançamento(s) no total</span>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- COLUNA DIREITA: DISTRIBUIÇÃO DE DESPESAS (POR CATEGORIA / POR ESPAÇO) -->
+    <section class="report-card">
+      <div class="report-card-header">
+        <div>
+          <h2 class="report-card-title">Distribuição de despesas</h2>
+          <p class="report-card-subtitle">Onde seus recursos foram utilizados</p>
+        </div>
+
+        <div class="segmented-tabs">
+          <button
+            type="button"
+            class="seg-tab-btn"
+            [class.active]="abaDistribuicao() === 'categoria'"
+            (click)="abaDistribuicao.set('categoria')">
+            Por categoria
+          </button>
+          <button
+            type="button"
+            class="seg-tab-btn"
+            [class.active]="abaDistribuicao() === 'espaco'"
+            (click)="abaDistribuicao.set('espaco')">
+            Por espaço
+          </button>
+        </div>
+      </div>
+
+      @if (itensDistribuicaoAtiva().length === 0) {
+        <div class="report-empty-state">
+          <div class="empty-icon-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+              <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+            </svg>
+          </div>
+          <h4>Sem despesas para exibir</h4>
+          <p>Não há saídas registradas {{ abaDistribuicao() === 'categoria' ? 'por categoria' : 'por espaço' }} neste período.</p>
+        </div>
+      } @else {
+        <div class="distribuicao-content">
+          <!-- Donut SVG -->
+          <div class="donut-visual-row">
+            <div class="donut-svg-box">
+              <svg class="donut-svg" viewBox="0 0 160 160">
+                <circle class="donut-bg-ring" cx="80" cy="80" r="66"></circle>
+                @for (seg of segmentosDonut(); track seg.nome) {
+                  <circle
+                    class="donut-segment"
+                    cx="80"
+                    cy="80"
+                    r="66"
+                    [attr.stroke]="seg.cor"
+                    [attr.stroke-dasharray]="seg.dasharray"
+                    [attr.stroke-dashoffset]="seg.dashoffset">
+                  </circle>
                 }
+              </svg>
+              <div class="donut-center-info">
+                <span class="donut-center-label">Total saídas</span>
+                <strong class="donut-center-val">{{ despesas() }}</strong>
               </div>
             </div>
-          }
-        </div>
+          </div>
 
-        <!-- Rótulos das Semanas -->
-        <div class="week-labels-pill">
-          @for (semana of dadosSemanas(); track semana.rotulo) {
-            <span class="week-label-item">{{ semana.rotulo }}</span>
-          }
+          <!-- Lista detalhada com barras -->
+          <div class="dist-items-list">
+            @for (item of itensDistribuicaoAtiva(); track item.nome) {
+              <div class="dist-item-row">
+                <div class="dist-item-top">
+                  <div class="dist-item-name-wrap">
+                    <span class="dist-color-dot" [style.background-color]="item.cor"></span>
+                    <span class="dist-item-name">{{ item.nome }}</span>
+                    <span class="dist-item-count">{{ item.quantidade }}x</span>
+                  </div>
+                  <div class="dist-item-values">
+                    <strong class="dist-item-amount">{{ formatarMoeda(item.valor) }}</strong>
+                    <span class="dist-item-pct">{{ item.percentual }}%</span>
+                  </div>
+                </div>
+                <div class="dist-progress-track">
+                  <div
+                    class="dist-progress-fill"
+                    [style.width.%]="item.percentual"
+                    [style.background-color]="item.cor">
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
         </div>
-      </div>
+      }
     </section>
 
   </div>
 
-  <!-- Card Inferior: Resumo do Período -->
-  <section class="resumo-periodo-card">
-    <h3 class="resumo-title">Resumo do período</h3>
-    <div class="resumo-content">
-      <p class="resumo-item">
-        <strong>Total de movimentações:</strong> {{ totalMovimentacoes() }}
-      </p>
-      <p class="resumo-item">
-        <strong>Média de gastos por movimentação:</strong> {{ mediaGastos() }}
-      </p>
+  <!-- 4.5 ORÇAMENTO DO GRUPO: PLANEJADO VS REALIZADO -->
+  @if (gruposPlanejadoVsRealizado().length > 0) {
+    @for (grupo of gruposPlanejadoVsRealizado(); track grupo.espacoId) {
+      <section class="report-card planejado-realizado-card">
+        <div class="report-card-header">
+          <div class="group-title-wrap">
+            <div class="badge-orcamento-tag">
+              <span class="orc-dot" [style.background-color]="grupo.espacoCor"></span>
+              <span>Orçamento do Grupo · {{ grupo.espacoNome }}</span>
+            </div>
+            <h2 class="report-card-title">Planejado vs Realizado</h2>
+            <p class="report-card-subtitle">
+              Comparativo de limites estipulados por categoria versus consumo real no período.
+            </p>
+          </div>
+
+          <div class="group-header-right-side">
+            <div class="group-header-kpi">
+              <span class="kpi-micro-label">Teto do grupo</span>
+              <div class="kpi-micro-values">
+                <strong>{{ formatarMoeda(grupo.totalGasto) }}</strong>
+                <span class="sep">de</span>
+                <span>{{ formatarMoeda(grupo.tetoGeral) }}</span>
+              </div>
+              <span class="kpi-pct-badge" [class.warning]="grupo.percentualGeral >= 80 && grupo.percentualGeral < 100" [class.danger]="grupo.totalGasto > grupo.tetoGeral && grupo.tetoGeral > 0">
+                {{ grupo.percentualGeral }}% consumido
+              </span>
+            </div>
+
+            @if (grupo.podeEditar) {
+              <button
+                type="button"
+                class="btn-manage-orcamento-grupo"
+                (click)="abrirOrcamentoCompleto(grupo.espacoId, grupo.espacoNome)">
+                <span>Ajustar tetos</span>
+                <span class="arrow">›</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (grupo.itens.length === 0) {
+          <div class="report-empty-state compact">
+            <p>Nenhuma despesa ou limite registrado para este grupo no período selecionado.</p>
+          </div>
+        } @else {
+          <div class="planejado-grid-list">
+            @for (item of grupo.itens; track item.nome) {
+              <div class="planejado-item-card" [class.status-aviso]="item.status === 'aviso'" [class.status-excedido]="item.status === 'excedido'">
+                <div class="item-head">
+                  <div class="cat-title-row">
+                    <span class="cat-pill-dot" [style.background-color]="item.cor"></span>
+                    <strong class="cat-title-text">{{ item.nome }}</strong>
+                    @if (item.status === 'excedido') {
+                      <span class="tag-status-pill excedido">🚨 Limite excedido</span>
+                    } @else if (item.status === 'aviso') {
+                      <span class="tag-status-pill aviso">⚠️ 80% atingido</span>
+                    }
+                  </div>
+
+                  <div class="cat-amount-summary">
+                    <span class="amount-realizado">{{ formatarMoeda(item.realizado) }}</span>
+                    @if (item.planejado > 0) {
+                      <span class="amount-planejado">de {{ formatarMoeda(item.planejado) }}</span>
+                      @if (grupo.podeEditar) {
+                        <button
+                          type="button"
+                          class="btn-quick-edit-teto"
+                          (click)="abrirDefinirTetoCategoria(grupo.espacoId, item, grupo.espacoNome)"
+                          title="Alterar teto de {{ item.nome }}">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                          </svg>
+                        </button>
+                      }
+                    } @else {
+                      <button
+                        type="button"
+                        class="amount-sem-meta btn-as-link"
+                        (click)="abrirDefinirTetoCategoria(grupo.espacoId, item, grupo.espacoNome)"
+                        title="Clique para adicionar teto para {{ item.nome }}">
+                        sem limite
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="cat-bar-wrap">
+                  <div class="cat-bar-track">
+                    <div
+                      class="cat-bar-fill"
+                      [style.width.%]="item.percentual > 100 ? 100 : item.percentual"
+                      [style.background-color]="item.cor"
+                      [class.danger-fill]="item.status === 'excedido'">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="item-bottom-info">
+                  <span class="info-pct" [class.danger-text]="item.status === 'excedido'" [class.warning-text]="item.status === 'aviso'">
+                    {{ item.percentual }}% utilizado
+                  </span>
+
+                  <div class="info-diff-container">
+                    @if (item.planejado > 0) {
+                      @if (item.realizado > item.planejado) {
+                        <span class="diff-excedido">Excedeu {{ formatarMoeda(item.excedido) }}</span>
+                      } @else {
+                        <span class="diff-restante">Resta {{ formatarMoeda(item.restante) }}</span>
+                      }
+                    } @else {
+                      <span class="diff-livre">Despesa sem teto fixo</span>
+                      @if (grupo.podeEditar) {
+                        <button
+                          type="button"
+                          class="btn-add-teto-badge"
+                          (click)="abrirDefinirTetoCategoria(grupo.espacoId, item, grupo.espacoNome)">
+                          + Adicionar teto
+                        </button>
+                      }
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
+
+  <!-- 5. GRID INFERIOR: BALANÇO POR ESPAÇO & MAIORES LANÇAMENTOS DO PERÍODO -->
+  <div class="analytics-bottom-grid">
+
+    <!-- Balanço por Espaço no Período -->
+    <section class="report-card">
+      <div class="report-card-header">
+        <div>
+          <h2 class="report-card-title">Desempenho por espaço</h2>
+          <p class="report-card-subtitle">Entradas, saídas e resultado de cada espaço no período</p>
+        </div>
+      </div>
+
+      @if (resumoPorEspaco().length === 0) {
+        <div class="report-empty-state compact">
+          <p>Nenhum espaço cadastrado ainda.</p>
+        </div>
+      } @else {
+        <div class="spaces-performance-list">
+          @for (esp of resumoPorEspaco(); track esp.id) {
+            <div class="space-perf-item">
+              <div class="space-perf-top">
+                <div class="space-perf-title-group">
+                  <span class="space-perf-dot" [style.background-color]="esp.cor"></span>
+                  <div>
+                    <h4 class="space-perf-name">{{ esp.nome }}</h4>
+                    <span class="space-perf-meta">{{ esp.tipo }} · {{ esp.transacoes }} movimentação(ões)</span>
+                  </div>
+                </div>
+
+                <div class="space-perf-saldo" [class.negative]="esp.saldo < 0">
+                  <span class="saldo-tag">Saldo</span>
+                  <strong>{{ formatarMoeda(esp.saldo) }}</strong>
+                </div>
+              </div>
+
+              <div class="space-perf-metrics">
+                <span class="perf-metric income">
+                  Entradas: <strong>{{ formatarMoeda(esp.receitas) }}</strong>
+                </span>
+                <span class="perf-metric expense">
+                  Saídas: <strong>{{ formatarMoeda(esp.despesas) }}</strong>
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- Maiores Movimentações do Período -->
+    <section class="report-card">
+      <div class="report-card-header">
+        <div>
+          <h2 class="report-card-title">Maiores lançamentos do período</h2>
+          <p class="report-card-subtitle">Movimentações de maior impacto financeiro</p>
+        </div>
+        <button type="button" class="btn-card-link" (click)="irParaMovimentacoes()">
+          Ver todas ›
+        </button>
+      </div>
+
+      @if (maioresMovimentacoes().length === 0) {
+        <div class="report-empty-state compact">
+          <p>Nenhuma movimentação registrada neste período.</p>
+        </div>
+      } @else {
+        <div class="top-transactions-list">
+          @for (mov of maioresMovimentacoes(); track mov.id) {
+            <div class="top-mov-row">
+              <div class="top-mov-icon" [class.income]="mov.tipo === 'receita'" [class.expense]="mov.tipo === 'despesa'">
+                @if (mov.tipo === 'receita') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                  </svg>
+                }
+              </div>
+
+              <div class="top-mov-info">
+                <span class="top-mov-desc">{{ mov.descricao }}</span>
+                <div class="top-mov-tags">
+                  <span class="mov-cat-tag">{{ mov.categoria }}</span>
+                  <span class="mov-space-tag">
+                    <span class="tiny-dot" [style.background-color]="obterCorEspaco(mov.espaco_id)"></span>
+                    {{ mov.espaco_nome || obterNomeEspaco(mov.espaco_id) }}
+                  </span>
+                  <span class="mov-date-tag">{{ formatarDataCurta(mov.data) }}</span>
+                </div>
+              </div>
+
+              <strong class="top-mov-amount" [class.income]="mov.tipo === 'receita'" [class.expense]="mov.tipo === 'despesa'">
+                {{ mov.tipo === 'receita' ? '+' : '-' }} {{ formatarMoeda(mov.valor) }}
+              </strong>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+  </div>
+
+  <!-- 6. BANNER DE DIAGNÓSTICO DO PERÍODO -->
+  <section class="report-insight-banner">
+    <div class="insight-badge-icon">
+      <svg class="insight-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        <circle cx="12" cy="12" r="4"/>
+      </svg>
+    </div>
+    <div class="insight-text-wrap">
+      <h3 class="insight-heading">Diagnóstico do período</h3>
+      <p class="insight-paragraph">{{ insightRelatorio() }}</p>
     </div>
   </section>
+
+  <!-- Modal Rápido: Definir Teto da Despesa -->
+  @if (modalDefinirTetoAberto() && categoriaEdicaoTeto(); as info) {
+    <div class="modal-teto-backdrop" (click)="fecharModalDefinirTeto()">
+      <div class="modal-teto-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-teto-header">
+          <div class="modal-teto-title-wrap">
+            <span class="modal-teto-dot" [style.background-color]="info.cor"></span>
+            <div>
+              <h3 class="modal-teto-title">Definir teto de despesa</h3>
+              <p class="modal-teto-sub">
+                Categoria <strong>{{ info.categoriaNome }}</strong> · Espaço <strong>{{ info.espacoNome }}</strong>
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal-teto" (click)="fecharModalDefinirTeto()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="modal-teto-body">
+          <div class="modal-teto-current-kpi">
+            <span class="kpi-tag">Gasto realizado no período:</span>
+            <strong class="kpi-val">{{ formatarMoeda(info.gastoAtual) }}</strong>
+            @if (info.limiteAtual > 0) {
+              <span class="kpi-prev">(Teto atual: {{ formatarMoeda(info.limiteAtual) }})</span>
+            } @else {
+              <span class="kpi-prev sem-meta">(Atualmente sem teto estipulado)</span>
+            }
+          </div>
+
+          <div class="modal-teto-field-group">
+            <label class="modal-teto-label">Teto mensal desejado para esta categoria:</label>
+            <div class="modal-teto-input-wrap">
+              <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+              <input
+                type="number"
+                min="0"
+                step="50"
+                class="modal-teto-input"
+                [ngModel]="novoLimiteValor()"
+                (ngModelChange)="novoLimiteValor.set($event)"
+                placeholder="Ex: 1000,00"
+                (keyup.enter)="salvarTetoCategoria()"
+                autofocus
+              />
+            </div>
+          </div>
+
+          <!-- Sugestões de valor rápido -->
+          <div class="modal-teto-sugestoes">
+            <span class="sugestoes-label">Sugestões de limite:</span>
+            <div class="sugestoes-chips">
+              @for (sug of sugestoesTeto(); track sug) {
+                <button
+                  type="button"
+                  class="chip-sugestao"
+                  [class.active]="novoLimiteValor() === sug"
+                  (click)="definirSugestao(sug)">
+                  {{ formatarMoeda(sug) }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (erroModalOrcamento()) {
+            <div class="modal-teto-error">
+              ⚠️ {{ erroModalOrcamento() }}
+            </div>
+          }
+
+          <div class="modal-teto-footnote">
+            <button
+              type="button"
+              class="btn-link-full-drawer"
+              (click)="abrirOrcamentoCompleto(info.espacoId, info.espacoNome)">
+              ⚙️ Ver e ajustar todas as categorias deste espaço ›
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-teto-footer">
+          <button
+            type="button"
+            class="btn-modal-teto-cancel"
+            (click)="fecharModalDefinirTeto()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-teto-save"
+            [disabled]="salvandoOrcamento()"
+            (click)="salvarTetoCategoria()">
+            {{ salvandoOrcamento() ? 'Salvando...' : 'Salvar teto' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Drawer Lateral: Orçamento Completo do Espaço -->
+  @if (modalOrcamentoCompletoAberto()) {
+    <div class="drawer-backdrop" (click)="fecharModalOrcamentoCompleto()">
+      <aside class="side-drawer" (click)="$event.stopPropagation()">
+        <div class="drawer-header">
+          <div>
+            <h2 class="drawer-title">Teto do Espaço: {{ espacoNomeOrcamentoCompleto() }}</h2>
+            <p class="drawer-subtitle">Defina o teto geral do espaço e os limites individuais de cada categoria.</p>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="fecharModalOrcamentoCompleto()" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="drawer-body">
+          <!-- Teto Geral -->
+          <div class="budget-drawer-box highlight-box">
+            <div class="teto-geral-header">
+              <div>
+                <h4 class="box-sec-title">Teto geral do espaço (mensal)</h4>
+                <p class="box-sec-desc">
+                  Informe um teto global ou deixe em branco para somar automaticamente as categorias ({{ formatarMoeda(somaCategoriasEdicao()) }}).
+                </p>
+              </div>
+              @if (tetoGeralEdicao !== null && tetoGeralEdicao > 0) {
+                <button type="button" class="btn-auto-soma" (click)="usarSomaCategoriasNoTeto()">
+                  Usar soma automática
+                </button>
+              }
+            </div>
+
+            <div class="currency-input-wrap">
+              <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+              <input
+                type="number"
+                min="0"
+                class="drawer-input"
+                [(ngModel)]="tetoGeralEdicao"
+                [placeholder]="'Automático (' + formatarMoeda(somaCategoriasEdicao()) + ')'"
+              />
+            </div>
+          </div>
+
+          <!-- Adicionar Categoria -->
+          <div class="budget-drawer-box">
+            <h4 class="box-sec-title">+ Adicionar categoria com teto</h4>
+            <div class="new-cat-grid">
+              <input
+                type="text"
+                class="drawer-input"
+                [(ngModel)]="novaCategoriaNome"
+                placeholder="Nome (ex: Mercado, Casa...)"
+                (keyup.enter)="adicionarCategoriaNaEdicao()"
+              />
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">{{ themeService.obterSimbolo() }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  class="drawer-input"
+                  [(ngModel)]="novaCategoriaLimite"
+                  placeholder="Limite (0,00)"
+                  (keyup.enter)="adicionarCategoriaNaEdicao()"
+                />
+              </div>
+              <button type="button" class="btn-add-cat-drawer" (click)="adicionarCategoriaNaEdicao()">
+                + Adicionar
+              </button>
+            </div>
+            @if (erroModalOrcamento()) {
+              <span class="drawer-error-msg">{{ erroModalOrcamento() }}</span>
+            }
+          </div>
+
+          <!-- Lista de Categorias -->
+          <div class="drawer-categories-section">
+            <span class="drawer-section-label">Limites por categoria</span>
+            <div class="drawer-categories-list">
+              @for (cat of categoriasEdicao(); track cat.id ?? cat.nome) {
+                <div class="drawer-cat-row">
+                  <div class="drawer-cat-left">
+                    <span class="cat-dot-lg" [style.background-color]="cat.cor"></span>
+                    <span class="cat-row-name">{{ cat.nome }}</span>
+                  </div>
+
+                  <div class="drawer-cat-right">
+                    <span class="currency-prefix-sm">{{ themeService.obterSimbolo() }}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      class="drawer-input-sm"
+                      [(ngModel)]="cat.limite"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      class="btn-remove-cat-row"
+                      (click)="removerCategoriaNaEdicao(cat.id ?? cat.nome)"
+                      title="Remover categoria">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              } @empty {
+                <p class="drawer-hint" style="text-align: center; padding: 12px 0;">Nenhuma categoria cadastrada com teto ainda.</p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-footer">
+          <button type="button" class="btn-drawer-save" [disabled]="salvandoOrcamento()" (click)="salvarModalOrcamentoCompleto()">
+            {{ salvandoOrcamento() ? 'Salvando...' : 'Salvar orçamento do espaço' }}
+          </button>
+          <button type="button" class="btn-drawer-cancel" (click)="fecharModalOrcamentoCompleto()">Cancelar</button>
+        </div>
+      </aside>
+    </div>
+  }
+
+  <!-- Toast Notification Feedback -->
+  @if (toastMensagem()) {
+    <div class="toast-feedback-wrap">
+      <div class="toast-feedback">
+        <span class="toast-icon">✓</span>
+        <span>{{ toastMensagem() }}</span>
+      </div>
+    </div>
+  }
 
 </div>

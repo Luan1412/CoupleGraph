@@ -157,10 +157,49 @@
     <section class="card-box orcamento-box">
       <div class="box-header">
         <div class="box-title-group">
-          <h2 class="box-title">Orçamento por categoria</h2>
-          <span class="budget-badge">{{ percentualGeralOrcamento() }}% utilizado</span>
+          <div class="box-title-row">
+            <h2 class="box-title">Orçamento por categoria</h2>
+            @if (ehEspacoCompartilhado()) {
+              <div class="budget-scope-pills">
+                <button
+                  type="button"
+                  class="btn-scope-pill"
+                  [class.active]="abaOrcamento() === 'grupo'"
+                  (click)="selecionarAbaOrcamento('grupo')">
+                  Grupo
+                </button>
+                <button
+                  type="button"
+                  class="btn-scope-pill"
+                  [class.active]="abaOrcamento() === 'pessoal'"
+                  (click)="selecionarAbaOrcamento('pessoal')">
+                  Pessoal
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="box-badge-row">
+            <span class="budget-badge">{{ percentualGeralOrcamento() }}% utilizado</span>
+            @if (ehEspacoCompartilhado() && abaOrcamento() === 'grupo') {
+              @if (ehAdminDoEspacoFiltrado()) {
+                <span class="badge-role-tag admin">Admin do grupo</span>
+              } @else {
+                <span class="badge-role-tag membro" title="Limites definidos pelos administradores do grupo">🔒 Limites do grupo (somente admin)</span>
+              }
+            } @else {
+              <span class="badge-role-tag pessoal">Pessoal</span>
+            }
+          </div>
         </div>
-        <button class="btn-ajustar-orcamento" (click)="abrirModalOrcamento()" title="Configurar limites de orçamento">
+
+        <button 
+          type="button"
+          class="btn-ajustar-orcamento" 
+          [class.disabled-btn]="ehEspacoCompartilhado() && abaOrcamento() === 'grupo' && !ehAdminDoEspacoFiltrado()"
+          [disabled]="ehEspacoCompartilhado() && abaOrcamento() === 'grupo' && !ehAdminDoEspacoFiltrado()"
+          (click)="abrirModalOrcamento()" 
+          [title]="ehEspacoCompartilhado() && abaOrcamento() === 'grupo' && !ehAdminDoEspacoFiltrado() ? 'Apenas administradores podem ajustar os limites deste grupo' : 'Configurar limites de orçamento'">
           <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="4" y1="21" x2="4" y2="14"></line>
             <line x1="4" y1="10" x2="4" y2="3"></line>
@@ -172,7 +211,7 @@
             <line x1="9" y1="8" x2="15" y2="8"></line>
             <line x1="17" y1="16" x2="23" y2="16"></line>
           </svg>
-          <span>Ajustar limites</span>
+          <span>{{ ehEspacoCompartilhado() && abaOrcamento() === 'grupo' ? 'Ajustar grupo' : 'Ajustar limites' }}</span>
         </button>
       </div>
 
@@ -186,11 +225,46 @@
         </div>
       </div>
 
+      <!-- Banner de Alerta de Orçamento (Exibido quando ativado nas configurações e houver categorias >= 80%) -->
+      @if (themeService.alertaOrcamento() && qtdCategoriasEmAlerta() > 0) {
+        <div class="alerta-orcamento-banner" role="alert">
+          <div class="alerta-banner-icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div class="alerta-banner-info">
+            <span class="alerta-banner-title">Aviso de Orçamento</span>
+            <span class="alerta-banner-desc">
+              {{ qtdCategoriasEmAlerta() === 1 ? '1 categoria atingiu' : qtdCategoriasEmAlerta() + ' categorias atingiram' }} 80% ou mais do limite planejado.
+            </span>
+          </div>
+        </div>
+      }
+
       <div class="orcamentos-list">
         @for (item of orcamentos(); track item.nome) {
-          <div class="orcamento-item">
+          <div 
+            class="orcamento-item"
+            [class.alerta-aviso]="themeService.alertaOrcamento() && ehAlerta80(item.gasto, item.limite)"
+            [class.alerta-critico]="themeService.alertaOrcamento() && ehLimiteExcedido(item.gasto, item.limite)">
             <div class="orcamento-info">
-              <span class="cat-label">{{ item.nome }}</span>
+              <div class="cat-label-wrap">
+                <span class="cat-label">{{ item.nome }}</span>
+                @if (themeService.alertaOrcamento()) {
+                  @if (ehLimiteExcedido(item.gasto, item.limite)) {
+                    <span class="alerta-badge critico">
+                      <span class="alerta-dot"></span> Limite excedido
+                    </span>
+                  } @else if (ehAlerta80(item.gasto, item.limite)) {
+                    <span class="alerta-badge aviso">
+                      <span class="alerta-dot"></span> 80% atingido
+                    </span>
+                  }
+                }
+              </div>
               <span class="cat-values">
                 <strong>{{ formatarMoeda(item.gasto) }}</strong> de {{ formatarMoeda(item.limite) }}
               </span>
@@ -205,9 +279,22 @@
             </div>
 
             <div class="orcamento-footer">
-              <span class="pct-text">{{ calcularPorcentagem(item.gasto, item.limite) }}% utilizado</span>
-              <span class="remaining-text">Resta {{ formatarMoeda(item.limite - item.gasto) }}</span>
+              <span class="pct-text" [class.alerta-pct]="themeService.alertaOrcamento() && (ehAlerta80(item.gasto, item.limite) || ehLimiteExcedido(item.gasto, item.limite))">
+                {{ calcularPorcentagem(item.gasto, item.limite) }}% utilizado
+              </span>
+              <span class="remaining-text">
+                @if (item.gasto > item.limite) {
+                  <span class="text-excedido">Excedeu {{ formatarMoeda(item.gasto - item.limite) }}</span>
+                } @else {
+                  <span>Resta {{ formatarMoeda(item.limite - item.gasto) }}</span>
+                }
+              </span>
             </div>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <p>Nenhuma categoria cadastrada ainda.</p>
+            <button class="btn-action-primary" (click)="abrirModalOrcamento()">Criar primeira categoria</button>
           </div>
         }
       </div>
@@ -286,8 +373,12 @@
         
         <div class="drawer-header">
           <div>
-            <h2 class="drawer-title">Limites de orçamento</h2>
-            <p class="drawer-subtitle">Defina o teto mensal de gastos ou adicione novas categorias.</p>
+            <h2 class="drawer-title">
+              {{ abaOrcamento() === 'grupo' && ehEspacoCompartilhado() ? 'Limites do grupo · ' + (espacoSelecionadoObj()?.espaco?.nome || 'Espaço') : 'Limites de orçamento pessoal' }}
+            </h2>
+            <p class="drawer-subtitle">
+              {{ abaOrcamento() === 'grupo' && ehEspacoCompartilhado() ? 'Como administrador, defina o teto mensal e as categorias compartilhadas do grupo.' : 'Defina o teto mensal de gastos ou adicione novas categorias para seu controle pessoal.' }}
+            </p>
           </div>
           <button type="button" class="btn-close-drawer" (click)="fecharModalOrcamento()" aria-label="Fechar">✕</button>
         </div>
@@ -376,6 +467,8 @@
                     <button type="button" class="btn-remove-cat" (click)="removerCategoriaNaEdicao(cat.id ?? cat.nome)" title="Excluir categoria">✕</button>
                   </div>
                 </div>
+              } @empty {
+                <p class="field-hint" style="text-align: center; padding: 12px 0;">Nenhuma categoria cadastrada. Adicione acima sua primeira categoria.</p>
               }
             </div>
           </div>
@@ -389,6 +482,14 @@
         </div>
 
       </aside>
+    </div>
+  }
+
+  <!-- Toast Flutuante -->
+  @if (toastMensagem()) {
+    <div class="toast-feedback">
+      <span class="toast-check">✓</span>
+      <span>{{ toastMensagem() }}</span>
     </div>
   }
 

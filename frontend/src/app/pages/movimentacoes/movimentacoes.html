@@ -272,7 +272,7 @@
                 <!-- Categoria com Tag Colorida -->
                 <td class="col-categoria">
                   <span class="cat-pill-tag">
-                    <span class="cat-dot" [style.background-color]="obterCorCategoria(mov.categoria)"></span>
+                    <span class="cat-dot" [style.background-color]="obterCorCategoria(mov.categoria, mov.espaco_id)"></span>
                     <span class="cat-tag-name">{{ mov.categoria }}</span>
                   </span>
                 </td>
@@ -450,6 +450,12 @@
                         <li class="combobox-item combobox-item-novo" (mousedown)="selecionarCategoria(formCategoria.trim())">
                           <span class="plus-icon">+</span>
                           <span>Adicionar nova: "<strong>{{ formCategoria.trim() }}</strong>"</span>
+                        </li>
+                      }
+
+                      @if (categoriasFiltradas().length === 0 && !formCategoria.trim()) {
+                        <li class="combobox-item" style="color: #94A3B8; cursor: default;">
+                          <span>Digite o nome para criar sua primeira categoria...</span>
                         </li>
                       }
                     </ul>
@@ -653,6 +659,12 @@
                         <li class="combobox-item combobox-item-novo" (mousedown)="selecionarEdicaoCategoria(formEdicaoCategoria.trim())">
                           <span class="plus-icon">+</span>
                           <span>Adicionar nova: "<strong>{{ formEdicaoCategoria.trim() }}</strong>"</span>
+                        </li>
+                      }
+
+                      @if (categoriasEdicaoFiltradas().length === 0 && !formEdicaoCategoria.trim()) {
+                        <li class="combobox-item" style="color: #94A3B8; cursor: default;">
+                          <span>Digite o nome para criar sua primeira categoria...</span>
                         </li>
                       }
                     </ul>

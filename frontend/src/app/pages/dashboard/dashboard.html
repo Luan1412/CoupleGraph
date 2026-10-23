@@ -14,25 +14,92 @@
     </div>
 
     <div class="hero-actions">
-      <!-- Seletor rápido de espaço -->
-      <div class="space-filter-pill">
-        <svg class="filter-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-        <select
-          class="hero-select"
-          [ngModel]="espacoFiltro()"
-          (ngModelChange)="onEspacoFiltroChange($event)"
-          aria-label="Filtrar espaço no início">
-          <option value="todos">Todos os espaços</option>
-          @for (esp of todosEspacos(); track esp.id) {
-            <option [value]="esp.id.toString()">{{ esp.nome }}</option>
+      <!-- Seletor rápido de espaço (Menu Suspenso Customizado) -->
+      <div class="space-filter-wrapper">
+        <button
+          type="button"
+          class="space-filter-pill"
+          [class.open]="dropdownEspacoHeroAberto()"
+          (click)="toggleDropdownEspacoHero($event)"
+          aria-haspopup="listbox"
+          [attr.aria-expanded]="dropdownEspacoHeroAberto()">
+          @if (corEspacoFiltrado(); as corEspaco) {
+            <span class="filter-color-dot" [style.background-color]="corEspaco"></span>
+          } @else {
+            <svg class="filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
           }
-        </select>
-        <span class="select-chevron">▾</span>
+          <span class="hero-select-label">{{ nomeEspacoFiltrado() }}</span>
+          <svg class="select-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+        @if (dropdownEspacoHeroAberto()) {
+          <div class="space-filter-dropdown" (click)="$event.stopPropagation()">
+            <div class="space-dropdown-header">FILTRAR VISÃO</div>
+
+            <button
+              type="button"
+              class="space-dropdown-item"
+              [class.active]="espacoFiltro() === 'todos'"
+              (click)="selecionarEspacoHero('todos', $event)">
+              <span class="item-icon-box all">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
+              <div class="item-text-col">
+                <span class="item-title">Todos os espaços</span>
+                <span class="item-sub">Visão consolidada geral</span>
+              </div>
+              @if (espacoFiltro() === 'todos') {
+                <svg class="item-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              }
+            </button>
+
+            @if (todosEspacos().length > 0) {
+              <div class="space-dropdown-divider"></div>
+              <div class="space-dropdown-list">
+                @for (esp of todosEspacos(); track esp.id) {
+                  <button
+                    type="button"
+                    class="space-dropdown-item"
+                    [class.active]="espacoFiltro() === esp.id.toString()"
+                    (click)="selecionarEspacoHero(esp.id.toString(), $event)">
+                    <span class="item-color-dot" [style.background-color]="esp.cor"></span>
+                    <div class="item-text-col">
+                      <span class="item-title">{{ esp.nome }}</span>
+                      <span class="item-sub">{{ esp.tipo }}</span>
+                    </div>
+                    @if (espacoFiltro() === esp.id.toString()) {
+                      <svg class="item-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    }
+                  </button>
+                }
+              </div>
+            }
+
+            <div class="space-dropdown-divider"></div>
+            <button
+              type="button"
+              class="space-dropdown-create-btn"
+              (click)="dropdownEspacoHeroAberto.set(false); abrirModalNovoEspaco()">
+              <span>+ Criar novo espaço</span>
+            </button>
+          </div>
+        }
       </div>
 
       <button type="button" class="btn-hero-outline" (click)="irParaEspacos()">
@@ -94,6 +161,99 @@
     </app-summary-card>
   </section>
 
+  <!-- 2.5 RESUMO FINANCEIRO SEMANAL (Ativado via Configurações > Preferências) -->
+  @if (themeService.resumoSemanal()) {
+    <section class="dash-semanal-card">
+      <div class="dash-semanal-header">
+        <div class="semanal-header-left">
+          <div class="semanal-badge-tag">
+            <span class="semanal-pulse"></span>
+            <span>Resumo Semanal</span>
+          </div>
+          <h2 class="semanal-title">Destaque Financeiro da Semana</h2>
+          <p class="semanal-subtitle">
+            Balanço consolidado do período de <strong>{{ resumoSemanalDados().periodoLabel }}</strong> em {{ nomeEspacoFiltrado() }}.
+          </p>
+        </div>
+
+        <div class="semanal-header-right">
+          <div class="semanal-count-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>{{ resumoSemanalDados().totalMovimentacoes }} lançamento(s) na semana</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="semanal-body-grid">
+        <!-- 3 Métricas Rápidas -->
+        <div class="semanal-metrics-col">
+          <div class="semanal-metric-card entrada">
+            <div class="metric-top">
+              <span class="metric-label">Entradas da semana</span>
+              <span class="metric-icon-wrap ic-green">↓</span>
+            </div>
+            <span class="metric-val text-green">+ {{ formatarMoeda(resumoSemanalDados().totalReceitas) }}</span>
+          </div>
+
+          <div class="semanal-metric-card saida">
+            <div class="metric-top">
+              <span class="metric-label">Saídas da semana</span>
+              <span class="metric-icon-wrap ic-red">↑</span>
+            </div>
+            <span class="metric-val text-red">- {{ formatarMoeda(resumoSemanalDados().totalDespesas) }}</span>
+          </div>
+
+          <div class="semanal-metric-card balanco" [class.positivo]="resumoSemanalDados().balanco >= 0" [class.negativo]="resumoSemanalDados().balanco < 0">
+            <div class="metric-top">
+              <span class="metric-label">Balanço líquido semanal</span>
+              <span class="metric-icon-wrap" [class.ic-green]="resumoSemanalDados().balanco >= 0" [class.ic-red]="resumoSemanalDados().balanco < 0">
+                {{ resumoSemanalDados().balanco >= 0 ? '✓' : '!' }}
+              </span>
+            </div>
+            <span class="metric-val" [class.text-green]="resumoSemanalDados().balanco >= 0" [class.text-red]="resumoSemanalDados().balanco < 0">
+              {{ formatarMoeda(resumoSemanalDados().balanco) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Top Categorias mais consumidas na semana -->
+        <div class="semanal-categories-col">
+          <div class="semanal-cat-header">
+            <h3 class="cat-col-title">Principais saídas da semana</h3>
+            <span class="cat-col-sub">{{ resumoSemanalDados().topCategorias.length > 0 ? 'Categorias com maiores despesas' : 'Sem despesas registradas' }}</span>
+          </div>
+
+          @if (resumoSemanalDados().topCategorias.length > 0) {
+            <div class="semanal-cat-list">
+              @for (cat of resumoSemanalDados().topCategorias; track cat.nome) {
+                <div class="semanal-cat-item">
+                  <div class="cat-item-info">
+                    <span class="cat-dot" [style.background-color]="cat.cor"></span>
+                    <span class="cat-name">{{ cat.nome }}</span>
+                    <span class="cat-pct">{{ cat.percentual }}%</span>
+                    <span class="cat-val">{{ formatarMoeda(cat.valor) }}</span>
+                  </div>
+                  <div class="cat-progress-track">
+                    <div class="cat-progress-fill" [style.width.%]="cat.percentual" [style.background-color]="cat.cor"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="semanal-empty-cat">
+              <p>Nenhuma despesa registrada nesta semana até o momento.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
   <!-- 3. GRID PRINCIPAL DE CONTEÚDO -->
   <div class="main-dashboard-grid">
 
@@ -153,7 +313,7 @@
                     <span class="tx-desc">{{ mov.descricao }}</span>
                     <div class="tx-meta-tags">
                       <span class="tx-cat-pill">
-                        <span class="cat-dot" [style.background-color]="obterCorCategoria(mov.categoria)"></span>
+                        <span class="cat-dot" [style.background-color]="obterCorCategoria(mov.categoria, 0, mov.espaco_id)"></span>
                         {{ mov.categoria }}
                       </span>
                       @if (mov.espaco_nome) {
@@ -343,20 +503,34 @@
       <section class="dash-card budget-overview-card">
         <div class="dash-card-header">
           <div>
-            <h2 class="dash-card-title">Teto de orçamento</h2>
+            <h2 class="dash-card-title">
+              {{ espacoFiltro() === 'todos' ? 'Teto consolidado' : 'Teto do espaço' }}
+            </h2>
             <p class="dash-card-subtitle">
-              {{ tetoGeralManualAtivo() ? 'Teto mensal geral definido manualmente' : 'Soma automática dos limites por categoria' }}
+              @if (espacoFiltro() === 'todos') {
+                Soma dos limites dos seus espaços ativos
+              } @else {
+                Meta mensal do espaço {{ nomeEspacoFiltrado() }}
+              }
             </p>
           </div>
-          <button type="button" class="btn-link-green" (click)="abrirModalOrcamento()">
-            <span>Definir teto</span>
-            <span class="arrow">›</span>
-          </button>
+          @if (ehAdminDoEspacoSelecionado()) {
+            <button type="button" class="btn-link-green" (click)="abrirModalOrcamento()">
+              <span>Definir teto</span>
+              <span class="arrow">›</span>
+            </button>
+          } @else {
+            <span class="badge-role-tag membro" title="Apenas administradores podem ajustar o teto deste grupo">
+              🔒 Somente admin
+            </span>
+          }
         </div>
 
         <div class="budget-meter-box">
           <div class="budget-meter-top">
-            <span class="meter-pct">{{ percentualOrcamentoUsado() }}% utilizado</span>
+            <span class="meter-pct" [class.warning]="percentualOrcamentoUsado() >= 80" [class.danger]="despesasTotais() > totalPlanejadoOrcamento() && totalPlanejadoOrcamento() > 0">
+              {{ percentualOrcamentoUsado() }}% utilizado
+            </span>
             <span class="meter-values">
               <strong>{{ formatarMoeda(despesasTotais()) }}</strong> de {{ formatarMoeda(totalPlanejadoOrcamento()) }}
             </span>
@@ -364,15 +538,21 @@
           <div class="budget-meter-track">
             <div
               class="budget-meter-fill"
-              [class.warning]="percentualOrcamentoUsado() >= 80"
+              [class.warning]="percentualOrcamentoUsado() >= 80 && percentualOrcamentoUsado() < 100"
+              [class.danger]="despesasTotais() > totalPlanejadoOrcamento() && totalPlanejadoOrcamento() > 0"
               [style.width.%]="percentualOrcamentoUsado()">
             </div>
           </div>
           <p class="budget-meter-hint">
-            @if (totalPlanejadoOrcamento() > despesasTotais()) {
-              Você ainda possui <strong>{{ formatarMoeda(totalPlanejadoOrcamento() - despesasTotais()) }}</strong> livres dentro do teto planejado.
+            @if (totalPlanejadoOrcamento() <= 0) {
+              Nenhum teto de orçamento configurado ainda.
+              @if (ehAdminDoEspacoSelecionado()) {
+                Clique em <strong>Definir teto</strong> para estipular a meta mensal.
+              }
+            } @else if (totalPlanejadoOrcamento() > despesasTotais()) {
+              Restam <strong>{{ formatarMoeda(totalPlanejadoOrcamento() - despesasTotais()) }}</strong> disponíveis dentro do teto planejado.
             } @else {
-              Os gastos atingiram o limite planejado. Clique em <strong>Definir teto</strong> para ajustar seu orçamento.
+              Os gastos atingiram ou superaram o teto planejado (excedeu {{ formatarMoeda(despesasTotais() - totalPlanejadoOrcamento()) }}).
             }
           </p>
         </div>
@@ -388,8 +568,12 @@
       <aside class="side-drawer" (click)="$event.stopPropagation()">
         <div class="drawer-header">
           <div>
-            <h2 class="drawer-title">Teto e limites de orçamento</h2>
-            <p class="drawer-subtitle">Defina um teto mensal geral ou ajuste os limites individuais de cada categoria.</p>
+            <h2 class="drawer-title">
+              {{ espacoIdEdicaoOrcamento() ? 'Teto do Espaço: ' + nomeEspacoFiltrado() : 'Teto de Orçamento' }}
+            </h2>
+            <p class="drawer-subtitle">
+              {{ espacoIdEdicaoOrcamento() ? 'Defina o teto geral deste espaço e os limites de cada categoria.' : 'Defina um teto mensal geral ou ajuste os limites individuais de cada categoria.' }}
+            </p>
           </div>
           <button type="button" class="btn-close-drawer" (click)="fecharModalOrcamento()" aria-label="Fechar">✕</button>
         </div>
@@ -484,6 +668,8 @@
                     </button>
                   </div>
                 </div>
+              } @empty {
+                <p class="drawer-hint" style="text-align: center; padding: 12px 0;">Nenhuma categoria cadastrada. Adicione acima sua primeira categoria.</p>
               }
             </div>
           </div>
@@ -491,7 +677,9 @@
         </div>
 
         <div class="drawer-footer">
-          <button type="button" class="btn-drawer-save" (click)="salvarModalOrcamento()">Salvar teto e limites</button>
+          <button type="button" class="btn-drawer-save" [disabled]="salvandoOrcamento()" (click)="salvarModalOrcamento()">
+            {{ salvandoOrcamento() ? 'Salvando...' : 'Salvar teto e limites' }}
+          </button>
           <button type="button" class="btn-drawer-cancel" (click)="fecharModalOrcamento()">Cancelar</button>
         </div>
       </aside>
@@ -828,6 +1016,11 @@
                       @if (formCategoria.trim() && !categoriaJaExisteDash(formCategoria)) {
                         <li class="combobox-item-dash novo" (mousedown)="selecionarCategoriaDash(formCategoria.trim())">
                           <span>+ Criar "{{ formCategoria.trim() }}"</span>
+                        </li>
+                      }
+                      @if (categoriasFiltradas().length === 0 && !formCategoria.trim()) {
+                        <li class="combobox-item-dash" style="color: #94A3B8; cursor: default;">
+                          <span>Digite o nome para criar sua primeira categoria...</span>
                         </li>
                       }
                     </ul>

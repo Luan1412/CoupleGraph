@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SummaryCard } from '../../shared/components/summary-card/summary-card';
-import { EspacoService, EspacoUsuarioModel } from '../../core/services/espaco';
+import { EspacoService, EspacoUsuarioModel, OrcamentoEspacoModel } from '../../core/services/espaco';
 import { CategoriaService, CategoriaItem } from '../../core/services/categoria';
 import { MovimentacaoService, MovimentacaoItem } from '../../core/services/movimentacao';
 import { ThemeService } from '../../core/services/theme';
+import { Auth } from '../../core/services/auth';
 
 export interface BalancoEspaco {
   id: number;
@@ -29,6 +30,7 @@ export class Financas implements OnInit {
   private categoriaService = inject(CategoriaService);
   private movimentacaoService = inject(MovimentacaoService);
   themeService = inject(ThemeService);
+  private authService = inject(Auth);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
@@ -56,18 +58,124 @@ export class Financas implements OnInit {
   totalDespesas = signal<number>(0);
   taxaEconomia = signal<number>(0);
 
-  // Orçamentos por Categoria (Vindo reativamente do CategoriaService compartilhado)
-  orcamentos = computed(() => this.categoriaService.categorias());
+  // Escopo de Orçamento: 'grupo' (quando em espaço compartilhado) ou 'pessoal' (próprio do usuário)
+  abaOrcamento = signal<'grupo' | 'pessoal'>('grupo');
+  orcamentoGrupo = signal<OrcamentoEspacoModel | null>(null);
+  carregandoOrcamentoGrupo = signal<boolean>(false);
+  gastosPorCategoriaMap = signal<Map<string, number>>(new Map());
+  toastMensagem = signal<string>('');
+
+  // Identificação do Espaço Selecionado e Permissões
+  espacoSelecionadoObj = computed(() => {
+    const idStr = this.espacoSelecionadoId();
+    if (idStr === 'todos') return null;
+    const idNum = parseInt(idStr, 10);
+    return this.listaEspacos().find(item => item.espaco.id === idNum) || null;
+  });
+
+  ehEspacoCompartilhado = computed(() => {
+    const esp = this.espacoSelecionadoObj();
+    if (!esp) return false;
+    const total = esp.espaco.total_membros || esp.espaco.membros_detalhes?.length || 1;
+    return total > 1;
+  });
+
+  ehAdminDoEspacoFiltrado = computed(() => {
+    const esp = this.espacoSelecionadoObj();
+    if (!esp) return false;
+    const meuEmail = (this.authService.usuarioAtual()?.email || '').toLowerCase().trim();
+    const meuId = this.authService.usuarioAtual()?.id;
+
+    if (esp.papel === 'admin' || esp.papel === 'administrador') return true;
+    if (meuId && esp.espaco.criado_por === meuId) return true;
+
+    const detalhe = esp.espaco.membros_detalhes?.find(m =>
+      (meuId && m.usuario_id && m.usuario_id === meuId) ||
+      (meuEmail && m.email && m.email.toLowerCase().trim() === meuEmail)
+    );
+    return detalhe ? (detalhe.papel === 'admin' || detalhe.papel === 'administrador') : (esp.papel === 'admin');
+  });
+
+  // Orçamentos por Categoria (adaptado reativamente para Grupo vs Pessoal)
+  orcamentos = computed<CategoriaItem[]>(() => {
+    const gastosMap = this.gastosPorCategoriaMap();
+    if (this.ehEspacoCompartilhado() && this.abaOrcamento() === 'grupo') {
+      const grupo = this.orcamentoGrupo();
+      if (!grupo || !grupo.categorias || grupo.categorias.length === 0) {
+        const distinctCats = Array.from(gastosMap.keys());
+        if (distinctCats.length > 0) {
+          const espId = Number(this.espacoSelecionadoId());
+          return distinctCats.map(catNome => {
+            const nomeFormatado = catNome.charAt(0).toUpperCase() + catNome.slice(1);
+            return {
+              id: 'esp-' + catNome,
+              nome: nomeFormatado,
+              limite: 0,
+              gasto: gastosMap.get(catNome) || 0,
+              cor: this.categoriaService.obterCor(catNome, espId)
+            };
+          });
+        }
+        return [];
+      }
+      return grupo.categorias.map(c => {
+        const gasto = gastosMap.get(c.nome.toLowerCase().trim()) || 0;
+        return {
+          id: String(c.id || c.nome),
+          nome: c.nome,
+          limite: c.limite,
+          gasto,
+          cor: c.cor || this.categoriaService.obterCor(c.nome, grupo.espaco_id)
+        };
+      });
+    }
+
+    // Modo Pessoal
+    return this.categoriaService.categorias().map(c => ({
+      ...c,
+      cor: c.cor || this.categoriaService.obterCor(c.nome),
+      gasto: gastosMap.get(c.nome.toLowerCase().trim()) || 0
+    }));
+  });
 
   // Total do Orçamento Planejado vs Gasto
-  totalPlanejado = computed(() => this.categoriaService.totalPlanejado());
-  totalGastoOrcamento = computed(() => this.categoriaService.totalGasto());
+  totalPlanejado = computed(() => {
+    if (this.ehEspacoCompartilhado() && this.abaOrcamento() === 'grupo') {
+      const grupo = this.orcamentoGrupo();
+      if (grupo && grupo.teto_geral !== null && grupo.teto_geral > 0) {
+        return grupo.teto_geral;
+      }
+      return this.orcamentos().reduce((acc, c) => acc + (c.limite || 0), 0);
+    }
+    return this.categoriaService.totalPlanejado();
+  });
+
+  totalGastoOrcamento = computed(() => {
+    return this.orcamentos().reduce((acc, c) => acc + (c.gasto || 0), 0);
+  });
 
   percentualGeralOrcamento = computed(() => {
     const total = this.totalPlanejado();
     if (total === 0) return 0;
     return Math.min(100, Math.round((this.totalGastoOrcamento() / total) * 100));
   });
+
+  // Categorias em Alerta (>= 80% do limite planejado)
+  categoriasEmAlerta = computed(() => {
+    return this.orcamentos().filter(item => item.limite > 0 && (item.gasto / item.limite) >= 0.8);
+  });
+
+  qtdCategoriasEmAlerta = computed(() => this.categoriasEmAlerta().length);
+
+  ehLimiteExcedido(gasto: number, limite: number): boolean {
+    return limite > 0 && gasto >= limite;
+  }
+
+  ehAlerta80(gasto: number, limite: number): boolean {
+    if (limite <= 0) return false;
+    const razao = gasto / limite;
+    return razao >= 0.8 && razao < 1;
+  }
 
   // Balanço por Espaço
   balancoEspacos = signal<BalancoEspaco[]>([]);
@@ -182,6 +290,10 @@ export class Financas implements OnInit {
             }
           }
         }
+        const idAtual = Number(this.espacoSelecionadoId());
+        if (idAtual > 0) {
+          this.carregarOrcamentoGrupo(idAtual);
+        }
         this.aplicarPreset('mes_atual');
       },
       error: (err) => {
@@ -200,9 +312,51 @@ export class Financas implements OnInit {
       if (!isNaN(idNum) && idNum > 0) {
         this.ultimoTickProcessado = this.espacoService.selecaoEspacoTick() + 1;
         this.espacoService.definirEspacoAtivoId(idNum);
+        this.carregarOrcamentoGrupo(idNum);
       }
+    } else {
+      this.ultimoTickProcessado = this.espacoService.selecaoEspacoTick() + 1;
+      this.espacoService.definirEspacoAtivoId(null);
+      this.orcamentoGrupo.set(null);
+      this.abaOrcamento.set('pessoal');
     }
     this.aplicarFiltros();
+  }
+
+  carregarOrcamentoGrupo(espacoId: number): void {
+    const esp = this.listaEspacos().find(item => item.espaco.id === espacoId);
+    const numMembros = esp?.espaco.total_membros || esp?.espaco.membros_detalhes?.length || 1;
+    const ehCompartilhado = numMembros > 1;
+
+    if (!ehCompartilhado) {
+      this.orcamentoGrupo.set(null);
+      this.abaOrcamento.set('pessoal');
+      return;
+    }
+
+    this.carregandoOrcamentoGrupo.set(true);
+    this.espacoService.obterOrcamentoEspaco(espacoId).subscribe({
+      next: (dados) => {
+        this.orcamentoGrupo.set(dados);
+        if (dados?.categorias) {
+          this.categoriaService.armazenarCoresEspaco(espacoId, dados.categorias);
+        }
+        this.abaOrcamento.set('grupo');
+        this.carregandoOrcamentoGrupo.set(false);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.orcamentoGrupo.set(null);
+        this.abaOrcamento.set('pessoal');
+        this.carregandoOrcamentoGrupo.set(false);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  selecionarAbaOrcamento(aba: 'grupo' | 'pessoal'): void {
+    this.abaOrcamento.set(aba);
+    this.cdr.detectChanges();
   }
 
   aplicarPreset(preset: 'mes_atual' | 'ultimos_7' | 'ultimos_30'): void {
@@ -337,12 +491,13 @@ export class Financas implements OnInit {
     this.saldoDisponivel.set(saldo);
     this.taxaEconomia.set(Math.max(0, taxa));
 
-    // Atualiza os gastos reais de cada categoria para sincronizar com os orçamentos
+    // Atualiza mapa de gastos reais de cada categoria
     const gastosPorCat = new Map<string, number>();
     itens.filter(m => m.tipo === 'despesa').forEach(m => {
       const cat = (m.categoria || 'Outros').toLowerCase().trim();
       gastosPorCat.set(cat, (gastosPorCat.get(cat) || 0) + (m.valor || 0));
     });
+    this.gastosPorCategoriaMap.set(gastosPorCat);
 
     const categorias = this.categoriaService.categorias();
     categorias.forEach(cat => {
@@ -420,9 +575,62 @@ export class Financas implements OnInit {
 
   // Abertura e Gestão do Modal de Orçamentos
   abrirModalOrcamento(): void {
-    const clone = this.categoriaService.categorias().map(c => ({ ...c }));
-    this.categoriasEdicao.set(clone);
-    this.tetoGeralEdicao = this.categoriaService.tetoGeralManual();
+    if (this.ehEspacoCompartilhado() && this.abaOrcamento() === 'grupo') {
+      if (!this.ehAdminDoEspacoFiltrado()) {
+        this.exibirToast('Apenas administradores podem ajustar o orçamento deste grupo.');
+        return;
+      }
+      const grupo = this.orcamentoGrupo();
+      const clone = (grupo?.categorias || []).map(c => ({
+        id: String(c.id || c.nome),
+        nome: c.nome,
+        limite: c.limite,
+        gasto: 0,
+        cor: c.cor || this.categoriaService.obterCor(c.nome, grupo?.espaco_id)
+      }));
+
+      // Se o grupo ainda não tem categorias, oferece categorias padrão sugeridas
+      if (clone.length === 0) {
+        const espId = Number(this.espacoSelecionadoId());
+        const sugeridasMap = new Map<string, CategoriaItem>();
+
+        const padraoNomes = ['Mercado', 'Alimentação', 'Moradia', 'Transporte', 'Lazer', 'Saúde', 'Outros'];
+        padraoNomes.forEach((nome, idx) => {
+          sugeridasMap.set(nome.toLowerCase().trim(), {
+            id: String(idx + 1),
+            nome,
+            limite: 0,
+            gasto: 0,
+            cor: this.categoriaService.obterCor(nome, espId)
+          });
+        });
+
+        const gastosMap = this.gastosPorCategoriaMap();
+        gastosMap.forEach((_, catNome) => {
+          const chave = catNome.toLowerCase().trim();
+          if (!sugeridasMap.has(chave)) {
+            const formatado = catNome.charAt(0).toUpperCase() + catNome.slice(1);
+            sugeridasMap.set(chave, {
+              id: 'sug-' + chave,
+              nome: formatado,
+              limite: 0,
+              gasto: 0,
+              cor: this.categoriaService.obterCor(catNome, espId)
+            });
+          }
+        });
+
+        this.categoriasEdicao.set(Array.from(sugeridasMap.values()));
+      } else {
+        this.categoriasEdicao.set(clone);
+      }
+      this.tetoGeralEdicao = grupo?.teto_geral ?? null;
+    } else {
+      const clone = this.categoriaService.categorias().map(c => ({ ...c }));
+      this.categoriasEdicao.set(clone);
+      this.tetoGeralEdicao = this.categoriaService.tetoGeralManual();
+    }
+
     this.novaCategoriaNome = '';
     this.novaCategoriaLimite = null;
     this.erroModalOrcamento.set('');
@@ -467,7 +675,8 @@ export class Financas implements OnInit {
     }
 
     this.erroModalOrcamento.set('');
-    const novaCor = this.categoriaService.obterProximaCor();
+    const espId = this.ehEspacoCompartilhado() && this.abaOrcamento() === 'grupo' ? Number(this.espacoSelecionadoId()) : undefined;
+    const novaCor = this.categoriaService.obterCor(nome, espId);
     const novaCat: CategoriaItem = {
       id: Date.now().toString(),
       nome,
@@ -488,8 +697,49 @@ export class Financas implements OnInit {
   }
 
   salvarModalOrcamento(): void {
-    this.categoriaService.salvarTodas(this.categoriasEdicao(), this.tetoGeralEdicao);
-    this.fecharModalOrcamento();
+    if (this.ehEspacoCompartilhado() && this.abaOrcamento() === 'grupo') {
+      const espId = Number(this.espacoSelecionadoId());
+      if (!espId || isNaN(espId)) return;
+
+      const payload = {
+        teto_geral: this.tetoGeralEdicao,
+        categorias: this.categoriasEdicao().map(c => ({
+          nome: c.nome,
+          limite: Number(c.limite) || 0,
+          cor: c.cor
+        }))
+      };
+
+      this.espacoService.salvarOrcamentoEspaco(espId, payload).subscribe({
+        next: (atualizado) => {
+          this.orcamentoGrupo.set(atualizado);
+          if (atualizado?.categorias) {
+            this.categoriaService.armazenarCoresEspaco(espId, atualizado.categorias);
+          }
+          this.fecharModalOrcamento();
+          this.exibirToast('Orçamento do grupo salvo com sucesso!');
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          const msg = err.error?.detail || 'Erro ao salvar o orçamento do grupo.';
+          this.erroModalOrcamento.set(msg);
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.categoriaService.salvarTodas(this.categoriasEdicao(), this.tetoGeralEdicao);
+      this.fecharModalOrcamento();
+      this.exibirToast('Orçamento pessoal salvo com sucesso!');
+    }
+  }
+
+  exibirToast(mensagem: string): void {
+    this.toastMensagem.set(mensagem);
+    setTimeout(() => {
+      this.toastMensagem.set('');
+      this.cdr.detectChanges();
+    }, 3500);
+    this.cdr.detectChanges();
   }
 
   irParaEspacos(): void {

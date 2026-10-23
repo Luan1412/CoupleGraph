@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { EspacoService } from '../../core/services/espaco';
 import { MovimentacaoService } from '../../core/services/movimentacao';
 import { ThemeService } from '../../core/services/theme';
@@ -10,9 +11,12 @@ import { Auth } from '../../core/services/auth';
 export type IconeEspaco = 'casal' | 'casa' | 'viagem' | 'pessoal';
 
 export interface ParticipanteEspaco {
+  usuario_id?: number | null;
+  convite_id?: number | null;
   nome: string;
   email?: string;
   papel: 'admin' | 'membro';
+  status: 'ativo' | 'pendente';
   iniciais: string;
   corAvatar: string;
 }
@@ -104,7 +108,9 @@ export class Espacos implements OnInit {
 
   modalConfirmarRemoverMembroAberto = signal(false);
   modalSucessoRemoverMembroAberto = signal(false);
-  membroParaRemover = signal('');
+  membroParaRemover = signal<{ nome: string; usuario_id: number | null }>({ nome: '', usuario_id: null });
+
+  modalConfirmarSairAberto = signal(false);
 
   // Mensagens de Erro
   erroNovoEspaco = signal('');
@@ -126,8 +132,26 @@ export class Espacos implements OnInit {
   tipoEditado: 'compartilhado' | 'individual' = 'compartilhado';
   emailConvite = '';
 
+  // Sinais de Convites
+  convitesRecebidos = this.espacoService.convitesRecebidos;
+  convitesEnviados = this.espacoService.convitesEnviados;
+  conviteEspacoIdSelecionado = signal<number | null>(null);
+  conviteEmailInput = '';
+  erroConviteSecao = signal<string>('');
+  enviandoConviteSecao = signal<boolean>(false);
+  processandoConviteId = signal<number | null>(null);
+
+  constructor() {
+    effect(() => {
+      // Reage automaticamente a alterações de espaços e convites disparadas pelo EspacoService
+      this.espacoService.versaoEspacos();
+      this.carregarEspacos();
+    });
+  }
+
   ngOnInit(): void {
     this.carregarEspacos();
+    this.espacoService.carregarConvites();
   }
 
   obterNomeUsuarioLogado(): string {
@@ -176,8 +200,8 @@ export class Espacos implements OnInit {
           const meta = metaMap[id] || {};
           const padrao = this.inferirVisualPorNome(nome, idx);
 
-          let corEspaco: string = meta.cor || padrao.cor;
-          if (!meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
+          let corEspaco: string = item.espaco.cor || meta.cor || padrao.cor;
+          if (!item.espaco.cor && !meta.corPersonalizada && coresUsadas.has(corEspaco.toUpperCase())) {
             const alternativa = this.coresDisponiveis.find(c => !coresUsadas.has(c.toUpperCase()));
             corEspaco = alternativa || this.coresDisponiveis[idx % this.coresDisponiveis.length];
           }
@@ -187,35 +211,77 @@ export class Espacos implements OnInit {
           const despesasReal = Number(item.espaco.despesas ?? 0);
           const receitasReal = saldoReal + despesasReal;
 
-          const adminParticipante: ParticipanteEspaco = {
-            nome: nomeUser,
-            email: emailUser,
-            papel: item.papel === 'administrador' ? 'admin' : 'membro',
-            iniciais: this.obterIniciais(nomeUser),
-            corAvatar: '#3B82F6'
-          };
+          // Mapeia membros reais e convites pendentes vindos do backend
+          const detalhesApi = item.espaco.membros_detalhes || [];
+          let todosParticipantes: ParticipanteEspaco[] = [];
 
-          const extras = meta.participantesExtras || [];
-          const todosParticipantes = [adminParticipante, ...extras];
+          if (detalhesApi.length > 0) {
+            todosParticipantes = detalhesApi.map((m, pIdx) => {
+              const papelNormalizado: 'admin' | 'membro' =
+                (m.papel === 'administrador' || m.papel === 'admin') ? 'admin' : 'membro';
+              const statusNormalizado: 'ativo' | 'pendente' =
+                m.status === 'pendente' ? 'pendente' : 'ativo';
+
+              const corAvatar = papelNormalizado === 'admin'
+                ? '#3B82F6'
+                : (statusNormalizado === 'pendente'
+                    ? '#F59E0B'
+                    : this.coresDisponiveis[(pIdx + 1) % this.coresDisponiveis.length]);
+
+              return {
+                usuario_id: m.usuario_id ?? null,
+                convite_id: m.convite_id ?? null,
+                nome: m.nome,
+                email: m.email || '',
+                papel: papelNormalizado,
+                status: statusNormalizado,
+                iniciais: this.obterIniciais(m.nome),
+                corAvatar
+              };
+            });
+          } else {
+            todosParticipantes = [{
+              usuario_id: this.authService.usuarioAtual()?.id || null,
+              convite_id: null,
+              nome: nomeUser,
+              email: emailUser,
+              papel: item.papel === 'administrador' ? 'admin' : 'membro',
+              status: 'ativo',
+              iniciais: this.obterIniciais(nomeUser),
+              corAvatar: '#3B82F6'
+            }];
+          }
 
           const tipoReal: 'compartilhado' | 'individual' =
-            meta.tipo || (todosParticipantes.length > 1 || (item.espaco.total_membros ?? 1) > 1 ? 'compartilhado' : 'individual');
+            meta.tipo || (todosParticipantes.length > 1 ? 'compartilhado' : 'individual');
 
           return {
             id,
             nome,
             tipo: tipoReal,
             cor: corEspaco,
-            icone: meta.icone || padrao.icone,
+            icone: (item.espaco.icone as IconeEspaco) || meta.icone || padrao.icone,
             saldo: saldoReal,
             receitas: receitasReal,
             despesas: despesasReal,
-            admin: nomeUser,
+            admin: todosParticipantes.find(p => p.papel === 'admin')?.nome || nomeUser,
             participantes: todosParticipantes
           };
         });
 
         this.listaEspacos.set(espacosBase);
+
+        // Se o drawer de gerenciamento estiver aberto, atualiza os dados em tempo real
+        if (this.espacoSelecionado) {
+          const selecionadoAtualizado = espacosBase.find(e => e.id === this.espacoSelecionado!.id);
+          if (selecionadoAtualizado) {
+            this.espacoSelecionado = {
+              ...selecionadoAtualizado,
+              participantes: [...selecionadoAtualizado.participantes]
+            };
+          }
+        }
+
         this.inicializarEspacoAtivo(espacosBase);
         this.carregando.set(false);
         this.cdr.detectChanges();
@@ -353,60 +419,41 @@ export class Espacos implements OnInit {
       this.adicionarConvidadoLista();
     }
 
-    const nomeUser = this.obterNomeUsuarioLogado();
-    const emailUser = this.obterEmailUsuarioLogado();
-
-    const adminPart: ParticipanteEspaco = {
-      nome: nomeUser,
-      email: emailUser,
-      papel: 'admin',
-      iniciais: this.obterIniciais(nomeUser),
-      corAvatar: '#3B82F6'
-    };
-
-    const participantesExtras: ParticipanteEspaco[] = [];
-    if (this.novoEspacoTipo === 'compartilhado') {
-      this.novosConvidados().forEach((em, i) => {
-        const nomeExtraido = em.split('@')[0];
-        const formatado = nomeExtraido.charAt(0).toUpperCase() + nomeExtraido.slice(1);
-        participantesExtras.push({
-          nome: formatado,
-          email: em,
-          papel: 'membro',
-          iniciais: this.obterIniciais(formatado),
-          corAvatar: this.coresDisponiveis[(i + 2) % this.coresDisponiveis.length]
-        });
-      });
-    }
-
-    this.espacoService.criarEspaco({ nome }).subscribe({
+    this.espacoService.criarEspaco({
+      nome,
+      cor: this.novoEspacoCor,
+      icone: this.novoEspacoIcone
+    }).subscribe({
       next: (novo) => {
         this.salvarMetaNoStorage(novo.id, {
           tipo: this.novoEspacoTipo,
           cor: this.novoEspacoCor,
           corPersonalizada: true,
-          icone: this.novoEspacoIcone,
-          participantesExtras
+          icone: this.novoEspacoIcone
         });
 
-        const novoItem: ItemEspaco = {
-          id: novo.id,
-          nome: novo.nome,
-          tipo: this.novoEspacoTipo,
-          cor: this.novoEspacoCor,
-          icone: this.novoEspacoIcone,
-          saldo: 0,
-          receitas: 0,
-          despesas: 0,
-          admin: nomeUser,
-          participantes: [adminPart, ...participantesExtras]
-        };
-
-        this.listaEspacos.update(lista => [...lista, novoItem]);
-        this.selecionarEspacoAtivo(novoItem, false);
-        this.fecharModalNovoEspaco();
-        this.exibirToast(`Espaço "${novo.nome}" criado com sucesso!`);
-        this.cdr.detectChanges();
+        const convidados = this.novosConvidados();
+        if (this.novoEspacoTipo === 'compartilhado' && convidados.length > 0) {
+          const requisicoes = convidados.map(em =>
+            this.espacoService.enviarConvite(novo.id, em)
+          );
+          forkJoin(requisicoes).subscribe({
+            next: () => {
+              this.fecharModalNovoEspaco();
+              this.exibirToast(`Espaço "${novo.nome}" criado e convites enviados!`);
+              this.carregarEspacos();
+            },
+            error: () => {
+              this.fecharModalNovoEspaco();
+              this.exibirToast(`Espaço "${novo.nome}" criado!`);
+              this.carregarEspacos();
+            }
+          });
+        } else {
+          this.fecharModalNovoEspaco();
+          this.exibirToast(`Espaço "${novo.nome}" criado com sucesso!`);
+          this.carregarEspacos();
+        }
       },
       error: (err) => {
         const msg = err.error?.detail || 'Não foi possível criar o espaço. Verifique se já existe outro com este nome.';
@@ -446,7 +493,28 @@ export class Espacos implements OnInit {
     this.cdr.detectChanges();
   }
 
+  ehAdminDoEspaco(espaco?: ItemEspaco | null): boolean {
+    const e = espaco || this.espacoSelecionado;
+    if (!e) return false;
+    const meuEmail = (this.authService.usuarioAtual()?.email || '').toLowerCase().trim();
+    const meuId = this.authService.usuarioAtual()?.id;
+    const part = e.participantes?.find(p =>
+      (meuId && p.usuario_id && p.usuario_id === meuId) ||
+      (meuEmail && p.email && p.email.toLowerCase().trim() === meuEmail)
+    );
+    return part ? part.papel === 'admin' : true;
+  }
+
+  ehProprioUsuario(membro: ParticipanteEspaco): boolean {
+    const meuEmail = (this.authService.usuarioAtual()?.email || '').toLowerCase().trim();
+    const meuId = this.authService.usuarioAtual()?.id;
+    if (meuId && membro.usuario_id && meuId === membro.usuario_id) return true;
+    if (meuEmail && membro.email && meuEmail === membro.email.toLowerCase().trim()) return true;
+    return false;
+  }
+
   iniciarEdicaoNome(): void {
+    if (!this.ehAdminDoEspaco()) return;
     this.nomeEditado = this.espacoSelecionado?.nome || '';
     this.erroEdicaoNome.set('');
     this.editandoNome.set(true);
@@ -460,18 +528,28 @@ export class Espacos implements OnInit {
   }
 
   alterarCorNoGerenciar(cor: string): void {
+    if (!this.ehAdminDoEspaco()) return;
     this.corEditada = cor;
     if (this.espacoSelecionado) {
       this.espacoSelecionado.cor = cor;
       this.persistirAlteracoesEspacoSelecionado();
+      this.espacoService.atualizarEspaco(this.espacoSelecionado.id, { cor }).subscribe({
+        next: () => this.espacoService.notificarAtualizacao(),
+        error: (err) => console.error('Erro ao sincronizar cor do espaço:', err)
+      });
     }
   }
 
   alterarIconeNoGerenciar(icone: IconeEspaco): void {
+    if (!this.ehAdminDoEspaco()) return;
     this.iconeEditado = icone;
     if (this.espacoSelecionado) {
       this.espacoSelecionado.icone = icone;
       this.persistirAlteracoesEspacoSelecionado();
+      this.espacoService.atualizarEspaco(this.espacoSelecionado.id, { icone }).subscribe({
+        next: () => this.espacoService.notificarAtualizacao(),
+        error: (err) => console.error('Erro ao sincronizar ícone do espaço:', err)
+      });
     }
   }
 
@@ -520,14 +598,12 @@ export class Espacos implements OnInit {
   private persistirAlteracoesEspacoSelecionado(): void {
     if (!this.espacoSelecionado) return;
     const esp = this.espacoSelecionado;
-    const extras = esp.participantes.filter(p => p.papel !== 'admin');
 
     this.salvarMetaNoStorage(esp.id, {
       tipo: esp.tipo,
       cor: esp.cor,
       corPersonalizada: true,
-      icone: esp.icone,
-      participantesExtras: extras
+      icone: esp.icone
     });
 
     this.listaEspacos.update(lista =>
@@ -549,63 +625,138 @@ export class Espacos implements OnInit {
   }
 
   enviarConvite(): void {
-    const email = this.emailConvite.trim();
+    const email = this.emailConvite.trim().toLowerCase();
     if (!email || !this.espacoSelecionado) return;
 
-    const nomeExtraido = email.includes('@') ? email.split('@')[0] : email;
-    const nomeFormatado = nomeExtraido.charAt(0).toUpperCase() + nomeExtraido.slice(1);
+    if (!email.includes('@')) {
+      this.exibirToast('Informe um e-mail válido para convidar.');
+      return;
+    }
 
-    const novoMembro: ParticipanteEspaco = {
-      nome: nomeFormatado,
-      email,
-      papel: 'membro',
-      iniciais: this.obterIniciais(nomeFormatado),
-      corAvatar: '#EC4899'
-    };
+    const espacoId = this.espacoSelecionado.id;
+    this.espacoService.enviarConvite(espacoId, email).subscribe({
+      next: () => {
+        this.exibirToast(`Convite enviado para ${email}!`);
+        this.cancelarConvidar();
+        this.carregarEspacos();
+        this.espacoService.carregarConvites();
+      },
+      error: (err) => {
+        const msg = err.error?.detail || 'Erro ao enviar convite.';
+        this.exibirToast(msg);
+      }
+    });
+  }
 
-    this.espacoSelecionado.participantes = [
-      ...(this.espacoSelecionado.participantes || []),
-      novoMembro
-    ];
-    this.espacoSelecionado.tipo = 'compartilhado';
-    this.persistirAlteracoesEspacoSelecionado();
-    this.exibirToast(`Participante ${nomeFormatado} adicionado!`);
-    this.cancelarConvidar();
+  cancelarConvitePendente(conviteId: number): void {
+    this.espacoService.cancelarConvite(conviteId).subscribe({
+      next: () => {
+        this.exibirToast('Convite cancelado.');
+        this.carregarEspacos();
+        this.espacoService.carregarConvites();
+      },
+      error: (err) => {
+        const msg = err.error?.detail || 'Erro ao cancelar convite.';
+        this.exibirToast(msg);
+      }
+    });
   }
 
   // --- REMOÇÃO DE PARTICIPANTE ---
-  solicitarRemocaoMembro(membroNome: string): void {
-    this.membroParaRemover.set(membroNome);
+  solicitarRemocaoMembro(membro: ParticipanteEspaco): void {
+    this.membroParaRemover.set({ nome: membro.nome, usuario_id: membro.usuario_id ?? null });
     this.modalConfirmarRemoverMembroAberto.set(true);
     this.cdr.detectChanges();
   }
 
   cancelarRemocaoMembro(): void {
     this.modalConfirmarRemoverMembroAberto.set(false);
-    this.membroParaRemover.set('');
+    this.membroParaRemover.set({ nome: '', usuario_id: null });
     this.cdr.detectChanges();
   }
 
   confirmarRemocaoMembro(): void {
     const membro = this.membroParaRemover();
-    if (this.espacoSelecionado && membro) {
-      this.espacoSelecionado.participantes = this.espacoSelecionado.participantes.filter(
-        p => p.nome !== membro
-      );
-      if (this.espacoSelecionado.participantes.length <= 1) {
-        this.espacoSelecionado.tipo = 'individual';
-      }
-      this.persistirAlteracoesEspacoSelecionado();
+    const espacoId = this.espacoSelecionado?.id;
+    if (espacoId && membro.usuario_id) {
+      this.espacoService.removerMembro(espacoId, membro.usuario_id).subscribe({
+        next: () => {
+          this.modalConfirmarRemoverMembroAberto.set(false);
+          this.modalSucessoRemoverMembroAberto.set(true);
+          this.carregarEspacos();
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.modalConfirmarRemoverMembroAberto.set(false);
+          this.exibirToast(err.error?.detail || 'Erro ao remover participante.');
+        }
+      });
+    } else {
+      this.modalConfirmarRemoverMembroAberto.set(false);
     }
-    this.modalConfirmarRemoverMembroAberto.set(false);
-    this.modalSucessoRemoverMembroAberto.set(true);
-    this.cdr.detectChanges();
   }
 
   fecharModalSucessoRemocaoMembro(): void {
     this.modalSucessoRemoverMembroAberto.set(false);
-    this.membroParaRemover.set('');
+    this.membroParaRemover.set({ nome: '', usuario_id: null });
     this.cdr.detectChanges();
+  }
+
+  // --- ALTERAR PAPEL DE MEMBRO (PROMOVER A ADMIN / REBAIXAR PARA MEMBRO) ---
+  alternarPapelMembro(membro: ParticipanteEspaco): void {
+    if (!this.espacoSelecionado || !membro.usuario_id) return;
+    if (!this.ehAdminDoEspaco()) {
+      this.exibirToast('Apenas administradores podem alterar as permissões de participantes.');
+      return;
+    }
+
+    const espacoId = this.espacoSelecionado.id;
+    const novoPapel = membro.papel === 'admin' ? 'participante' : 'administrador';
+    const textoPapel = novoPapel === 'administrador' ? 'Administrador' : 'Participante';
+
+    this.espacoService.alterarPapelMembro(espacoId, membro.usuario_id, novoPapel).subscribe({
+      next: () => {
+        this.exibirToast(`${membro.nome} agora é ${textoPapel}!`);
+        this.carregarEspacos();
+      },
+      error: (err) => {
+        const msg = err.error?.detail || 'Erro ao alterar permissão do participante.';
+        this.exibirToast(msg);
+      }
+    });
+  }
+
+  // --- SAIR DO ESPAÇO (VISÃO DO MEMBRO) ---
+  solicitarSairEspaco(): void {
+    this.modalConfirmarSairAberto.set(true);
+    this.cdr.detectChanges();
+  }
+
+  cancelarSairEspaco(): void {
+    this.modalConfirmarSairAberto.set(false);
+    this.cdr.detectChanges();
+  }
+
+  confirmarSairEspaco(): void {
+    if (!this.espacoSelecionado) return;
+    const id = this.espacoSelecionado.id;
+    const nome = this.espacoSelecionado.nome;
+
+    this.espacoService.sairDoEspaco(id).subscribe({
+      next: () => {
+        this.modalConfirmarSairAberto.set(false);
+        this.modalGerenciarAberto.set(false);
+        this.espacoSelecionado = null;
+        this.exibirToast(`Você saiu do espaço "${nome}".`);
+        this.carregarEspacos();
+        this.espacoService.carregarConvites();
+      },
+      error: (err) => {
+        this.modalConfirmarSairAberto.set(false);
+        const msg = err.error?.detail || 'Erro ao sair do espaço.';
+        this.exibirToast(msg);
+      }
+    });
   }
 
   // --- EXCLUSÃO DE ESPAÇO ---
@@ -680,6 +831,90 @@ export class Espacos implements OnInit {
     } catch {
       // ignore
     }
+  }
+
+  // --- AÇÕES DA SEÇÃO DE CONVITES ---
+  aceitarConviteRecebido(conviteId: number, espacoId?: number): void {
+    if (this.processandoConviteId() !== null) return;
+    this.processandoConviteId.set(conviteId);
+
+    this.espacoService.aceitarConvite(conviteId).subscribe({
+      next: () => {
+        this.processandoConviteId.set(null);
+        this.exibirToast('Convite aceito com sucesso! Você agora faz parte do espaço.');
+        this.carregarEspacos();
+        if (espacoId) {
+          this.espacoService.definirEspacoAtivoId(espacoId);
+        }
+      },
+      error: (err) => {
+        this.processandoConviteId.set(null);
+        const msg = err.error?.detail || 'Erro ao aceitar convite.';
+        this.exibirToast(msg);
+      }
+    });
+  }
+
+  recusarConviteRecebido(conviteId: number): void {
+    if (this.processandoConviteId() !== null) return;
+    this.processandoConviteId.set(conviteId);
+
+    this.espacoService.recusarConvite(conviteId).subscribe({
+      next: () => {
+        this.processandoConviteId.set(null);
+        this.exibirToast('Convite recusado.');
+      },
+      error: (err) => {
+        this.processandoConviteId.set(null);
+        const msg = err.error?.detail || 'Erro ao recusar convite.';
+        this.exibirToast(msg);
+      }
+    });
+  }
+
+  cancelarConviteEnviado(conviteId: number): void {
+    this.espacoService.cancelarConvite(conviteId).subscribe({
+      next: () => {
+        this.exibirToast('Convite cancelado.');
+      },
+      error: (err) => {
+        const msg = err.error?.detail || 'Erro ao cancelar convite.';
+        this.exibirToast(msg);
+      }
+    });
+  }
+
+  enviarConvitePelaSecao(): void {
+    const email = this.conviteEmailInput.trim().toLowerCase();
+    const espacoId = this.conviteEspacoIdSelecionado();
+
+    if (!espacoId) {
+      this.erroConviteSecao.set('Selecione um espaço para convidar.');
+      return;
+    }
+    if (!email || !email.includes('@')) {
+      this.erroConviteSecao.set('Informe um e-mail válido.');
+      return;
+    }
+
+    this.erroConviteSecao.set('');
+    this.enviandoConviteSecao.set(true);
+
+    this.espacoService.enviarConvite(espacoId, email).subscribe({
+      next: () => {
+        this.enviandoConviteSecao.set(false);
+        this.conviteEmailInput = '';
+        this.exibirToast(`Convite enviado para ${email}!`);
+        this.carregarEspacos();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.enviandoConviteSecao.set(false);
+        const msg = err.error?.detail || 'Erro ao enviar convite.';
+        this.erroConviteSecao.set(msg);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   exibirToast(msg: string): void {
